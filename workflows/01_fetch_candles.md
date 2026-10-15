@@ -1,58 +1,97 @@
-# Workflow 01 — Fetch Candles
+# Workflow 01 · Fetch Candles
 
 ## Objective
+
 Pull fresh candle data from OANDA for one or more currency pairs across all four timeframes (M1, M5, H1, H4) and store it in `.tmp/candles/` for downstream analysis.
 
+## Pipeline Position
+
+| Before | This workflow | After |
+|---|---|---|
+| — | **01 Fetch Candles** | 02 Run Structural Analysis |
+
+## Requirements Trace
+
+Traces to the functional requirements in `docs/design/requirements.md` covering market data retrieval. Add the requirement IDs here once Phase 01 defines them.
+
+## Permissions
+
+| Activity | Agent |
+|---|---|
+| Run this workflow on the **practice** environment | Allowed |
+| Retry after a rate limit (max 3) | Allowed |
+| Change `count` default, the 100-candle check, or the staleness rule | Ask Daniel first |
+| Point the tool at the live OANDA environment | **Never** |
+| Print or log the API key | **Never** |
+
+---
+
 ## Required Inputs
+
 | Input | Type | Example | Required |
-|-------|------|---------|----------|
+|---|---|---|---|
 | `pair` | string | `EUR_USD` | Yes |
 | `count` | int | `500` | No (default 500) |
-| `from_time` | ISO8601 string | `2024-01-01T00:00:00Z` | No (use for backtesting) |
-| `to_time` | ISO8601 string | `2024-06-30T23:59:59Z` | No (use with from_time) |
+| `from_time` | ISO 8601 string | `2024-01-01T00:00:00Z` | No (backtesting) |
+| `to_time` | ISO 8601 string | `2024-06-30T23:59:59Z` | No (use with `from_time`) |
 
 ## Tool
+
 `tools/oanda/fetch_candles.py`
+
+---
 
 ## Steps
 
 ### 1. Validate the pair
-Before fetching candles, confirm the pair is a valid OANDA instrument:
-```
+
+```bash
 python -m tools.oanda.fetch_instruments --check EUR_USD
 ```
-If the pair is not found, stop and inform the user. Do not proceed.
+
+If the pair is not found, stop and tell Daniel. Do not continue.
 
 ### 2. Fetch all 4 timeframes
-Run `fetch_all_timeframes()` or use the CLI with no `--granularity` flag to fetch all 4 at once:
-```
+
+Run with no `--granularity` flag to fetch all 4 at once:
+
+```bash
 python -m tools.oanda.fetch_candles --pair EUR_USD
 ```
+
 This writes:
-- `.tmp/candles/EUR_USD_M1.json`
-- `.tmp/candles/EUR_USD_M5.json`
-- `.tmp/candles/EUR_USD_H1.json`
-- `.tmp/candles/EUR_USD_H4.json`
+
+```
+.tmp/candles/EUR_USD_M1.json
+.tmp/candles/EUR_USD_M5.json
+.tmp/candles/EUR_USD_H1.json
+.tmp/candles/EUR_USD_H4.json
+```
 
 ### 3. Verify outputs
-After fetching, confirm each file:
-- Exists and is non-empty
-- Contains ≥ 100 complete candles
-- Most recent candle timestamp is within 2 × granularity period of current time (during market hours)
-- All required fields present: `time`, `open`, `high`, `low`, `close`, `volume`
 
-### 4. Multi-pair fetching
-To fetch multiple pairs at once, call `fetch_multiple_pairs()` in code:
+Confirm each file before continuing:
+
+- [ ] exists and is not empty
+- [ ] contains at least 100 complete candles
+- [ ] most recent candle is within 2 × the granularity period of now (during market hours)
+- [ ] every candle has `time`, `open`, `high`, `low`, `close`, `volume`
+
+If any check fails, see Edge Cases. Do not run Workflow 02 on bad data.
+
+### 4. Multi-pair fetching (optional)
+
 ```python
 from tools.oanda.fetch_candles import fetch_multiple_pairs
 fetch_multiple_pairs(["EUR_USD", "GBP_USD", "USD_JPY"])
 ```
 
-## Expected Outputs
-```
-.tmp/candles/{pair}_{granularity}.json
-```
-Each file is a JSON array of candle objects:
+---
+
+## Expected Output
+
+`.tmp/candles/{pair}_{granularity}.json`, a JSON array of candle objects:
+
 ```json
 [
   {
@@ -69,19 +108,44 @@ Each file is a JSON array of candle objects:
 ]
 ```
 
+---
+
 ## Edge Cases
 
-| Situation | How to Handle |
-|-----------|--------------|
-| OANDA API key missing | Script raises `EnvironmentError`. Check `.env` file. |
-| 429 Rate limit | OANDA allows 100 req/sec on practice. If hit, wait 1s and retry. Do not loop more than 3 retries. |
-| Fewer than 50 candles returned | Log warning. Market may be closed (weekend/holiday). Still write the file — downstream tools will check count. |
-| Market closed (weekend) | `complete: false` candles are filtered out automatically. Expect 0 complete candles. |
-| Stale data (most recent candle > 2 bars old during trading hours) | Log a warning. Could indicate API issue or pair not actively trading. |
-| `from_time` without `to_time` or vice versa | Both must be set together. Script defaults to `count` if either is missing. |
+| Situation | How to handle |
+|---|---|
+| OANDA API key missing | Script raises `EnvironmentError`. Check `.env`. |
+| 429 rate limit | Practice allows 100 req/sec. Wait 1s and retry, max 3 retries. |
+| Fewer than 50 candles returned | Log a warning (market may be closed). Still write the file; downstream tools check the count. |
+| Market closed (weekend) | `complete: false` candles are filtered out. Expect 0 complete candles. |
+| Stale data (latest candle > 2 bars old during trading hours) | Log a warning. Could be an API issue or an inactive pair. |
+| `from_time` without `to_time` (or the reverse) | Both must be set together. The script falls back to `count`. |
+
+---
+
+## Tests
+
+- Tests live in `tests/test_fetch_candles.py`.
+- Tests **never** call the real OANDA API. Use saved candle JSON fixtures.
+- Cover: invalid pair stops the workflow, incomplete candles are filtered, missing fields are caught, `from_time`/`to_time` fallback.
+
+## Done When
+
+All 4 candle files exist for the pair and pass every check in Step 3.
+
+---
 
 ## Notes
-- The `count` parameter fetches the N most recent *complete* candles. The current in-progress bar is excluded.
-- For backtesting, always use `from_time` + `to_time` to fetch a specific date range.
-- `.tmp/candles/` files are disposable. They can always be regenerated by re-running this workflow.
-- Credentials must never be hardcoded. All API keys come from `.env` only.
+
+- `count` fetches the N most recent **complete** candles. The in-progress bar is excluded.
+- For backtesting, always use `from_time` + `to_time`.
+- `.tmp/candles/` files are disposable and can be regenerated by re-running this workflow.
+- Credentials never go in code. All keys come from `.env`.
+
+## Change Log
+
+Record what you learned here (rate limits, quirks, fixes) with the date, so the next run avoids the same problem.
+
+| Date | Change | Why |
+|---|---|---|
+| | | |

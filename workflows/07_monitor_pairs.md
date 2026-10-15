@@ -1,88 +1,166 @@
-# Workflow 07 — Monitor Pairs
+# Workflow 07 · Monitor Pairs
 
 ## Objective
-Run a continuous multi-pair monitoring loop that scans all pairs in the watchlist on a schedule. When a new valid signal is detected (score ≥ 3), build the trade plan and send a push notification to all registered devices.
+
+Run a continuous loop that scans every pair in the watchlist on a schedule. When a new valid signal appears (score ≥ 3), build the trade plan and send a push notification to all registered devices.
+
+## Pipeline Position
+
+Runs Workflows 01 → 02 → 03 → 04 for each pair on a schedule, then notifies. Runs on weekdays via the scheduler.
+
+## Requirements Trace
+
+Traces to the functional requirements in `docs/design/requirements.md` for monitoring the watchlist and alerting only when 3 of 4 timeframes agree. Add the requirement IDs here once Phase 01 defines them.
+
+## Permissions
+
+| Activity | Agent |
+|---|---|
+| Start, stop, or restart the monitor on the **practice** account | Allowed |
+| Send a test notification | Allowed |
+| Change the watchlist or interval | Ask Daniel first |
+| Start a 24/7 background process (`nohup`, `pm2`) | Ask Daniel first |
+| Place, modify, or close an order | **Never** (this workflow only alerts) |
+| Print, log, or commit a push token | **Never** |
+
+---
 
 ## Tool
+
 `tools/oanda/stream_prices.py`
 
 ## Usage
 
-### Basic (6 major pairs, check every 5 minutes)
+**Default** (6 major pairs, every 5 minutes):
+
 ```bash
 python -m tools.oanda.stream_prices
 ```
 
-### Custom pairs and interval
+**Custom pairs and interval:**
+
 ```bash
 python -m tools.oanda.stream_prices \
   --pairs EUR_USD GBP_USD USD_JPY AUD_USD EUR_GBP \
   --interval 300
 ```
 
-### With push notifications
-First, get your device's Expo push token from the app (shown in the console when the app starts). Then:
+**With push notifications:** get your Expo push token from the app console when it starts, then:
+
 ```bash
 python -m tools.oanda.stream_prices \
   --pairs EUR_USD GBP_USD USD_JPY \
   --push-token "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"
 ```
 
-### Via the API (push token already registered by app)
-Alternatively, run the monitor loop programmatically from Python, and the server will use its registered token list automatically.
+**Through the API:** when the app has already registered its token, run the loop from Python and the server uses its registered token list automatically.
 
 ## Default Watchlist
+
 ```
 EUR_USD, GBP_USD, USD_JPY, AUD_USD, USD_CAD, EUR_GBP
 ```
 
+---
+
 ## Scan Cycle (per pair)
+
 ```
 1. fetch_all_timeframes(pair, count=300)   → .tmp/candles/
 2. run_full_analysis(pair)                 → .tmp/analysis/
-3. run_confluence_for_pair(pair)           → .tmp/signals/ (if score >= 3)
+3. run_confluence_for_pair(pair)           → .tmp/signals/ (if score ≥ 3)
 4. build_trade_plan(pair)                  → attaches plan to signal
-5. send_push_notification(token, ...)      → only if signal is new
+5. send_push_notification(token, ...)      → only if the signal is new
 ```
 
 ## Push Notification Flow
-1. App starts → `usePushNotifications()` hook requests permission
-2. Token posted to `POST /push/register` on the NEXUS server
-3. Monitor loop calls `notify_new_signal()` which hits Expo's push API
-4. Device receives: pair, direction, entry/SL/TP levels, R:R
+
+1. App starts → `usePushNotifications()` requests permission
+2. Token is posted to `POST /push/register` on the NEXUS server
+3. The monitor calls `notify_new_signal()`, which hits Expo's push API
+4. Device receives: pair, direction, entry/SL/TP, R:R
 
 ## Signal De-duplication
-Each signal is assigned a unique ID (`pair_YYYYMMDD_HHMM`). The `SignalTracker` class remembers which IDs have been notified this session — the same signal is never pushed twice even across multiple scan cycles.
 
-## Test Push Notifications
-With the server running and app open:
+Each signal has a unique ID (`pair_YYYYMMDD_HHMM`). `SignalTracker` remembers which IDs were already sent this session, so the same signal is never pushed twice across cycles.
+
+---
+
+## Steps
+
+### 1. Test notifications
+
+With the server running and the app open:
+
 ```
 POST http://localhost:8000/push/test
 ```
-This sends a test notification to all registered devices immediately.
+
+- [ ] a test notification arrives on the device
+
+### 2. Start the monitor
+
+Use one of the commands in **Usage**.
+
+### 3. Verify the first cycle
+
+- [ ] every watchlist pair is scanned (check the log)
+- [ ] a failing pair is logged and skipped without stopping the loop
+- [ ] any new valid signal has a trade plan and triggers exactly one notification
+
+---
 
 ## Edge Cases
 
-| Situation | How to Handle |
-|-----------|--------------|
-| OANDA rate limit (429) | `fetch_candles` logs a warning and skips the pair for this cycle |
-| Pair scan throws error | Log error, continue to next pair — never crash the loop |
-| No push token registered | Signals still saved to `.tmp/` and visible via API; push is silently skipped |
-| Push delivery fails | Log warning, continue — Expo's service is best-effort |
-| Signal already active | `SignalTracker` prevents duplicate pushes; signal file is updated in-place |
+| Situation | How to handle |
+|---|---|
+| OANDA rate limit (429) | `fetch_candles` logs a warning and skips that pair this cycle. |
+| A pair scan throws an error | Log it and move to the next pair. Never crash the loop. |
+| No push token registered | Signals still save to `.tmp/` and show through the API. Push is skipped. |
+| Push delivery fails | Log a warning and continue. Expo delivery is best-effort. |
+| Signal already active | `SignalTracker` blocks a duplicate push. The signal file updates in place. |
 
-## Running in Production
-For 24/7 operation, run the monitor in a persistent process. On macOS:
+---
+
+## Running 24/7 (ask Daniel first)
+
+On macOS, keep it running after the terminal closes:
+
 ```bash
-# Keep running even after terminal closes
 nohup python -m tools.oanda.stream_prices --interval 300 > monitor.log 2>&1 &
 ```
-Or use a process manager like `pm2`:
+
+Or with `pm2`:
+
 ```bash
 pm2 start "python -m tools.oanda.stream_prices" --name nexus-monitor
 ```
 
+Make sure `monitor.log` is in `.gitignore`.
+
+---
+
+## Tests
+
+- No tests exist yet. Add them in `tests/test_monitor_pairs.py`.
+- Use a fake broker and a fake push sender. Never call OANDA or Expo.
+- Cover: one pair failing doesn't stop the others, de-duplication across cycles, no push when no token is registered, no push when score < 3.
+
+## Done When
+
+The monitor completes full cycles over the watchlist, and new valid signals produce exactly one notification each.
+
+---
+
 ## Notes
-- Each full cycle (6 pairs) takes approximately 10-20 seconds due to OANDA API calls
-- The interval starts counting after the cycle completes (not from the start)
-- Signals are updated on every cycle — if confluence drops below 3, the signal file remains but no new push is sent
+
+- A full 6-pair cycle takes about 10–20 seconds because of OANDA calls.
+- The interval timer starts **after** a cycle finishes, not when it starts.
+- Signals update every cycle. If confluence drops below 3, the signal file stays but no new push is sent.
+- `SignalTracker` only remembers IDs for the current session. After a restart, an active signal could be pushed again.
+
+## Change Log
+
+| Date | Change | Why |
+|---|---|---|
+| | | |
