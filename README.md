@@ -1,5 +1,12 @@
 # NEXUS Trade
 
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688?logo=fastapi&logoColor=white)
+![React Native](https://img.shields.io/badge/React%20Native-Expo-61DAFB?logo=react&logoColor=black)
+![OANDA](https://img.shields.io/badge/OANDA-Demo%20Account-orange)
+![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
+![Tests](https://img.shields.io/badge/Tests-pytest-0A9EDC?logo=pytest&logoColor=white)
+
 NEXUS Trade is an automated forex trading system built in Python around Smart Money Concepts (SMC): market structure, order blocks, fair value gaps (FVGs), break of structure / change of character (BOS/CHoCH), and multi-timeframe confluence. It connects to the OANDA API for live market data and trade execution.
 
 The project follows the same software-engineering process as SFSU CSC 413 (Software Development): requirements first, then a domain model, then objects, design patterns, architecture, and testing.
@@ -57,7 +64,7 @@ A weekly scheduler runs live monitoring on weekdays and backtesting on weekends.
 | `Trade` | An open or closed position |
 | `Account` | Balance, risk %, and trades |
 
-Domain classes are Python dataclasses in `tools/models/`. Design diagrams live in `docs/design/`.
+Domain classes live in `tools/models/`. Design diagrams live in `docs/design/`.
 
 ---
 
@@ -103,11 +110,16 @@ NEXUS Trade/
 │   ├── backtest/         # candle replay, signal simulation, stats
 │   ├── reporting/        # trade journal, loss analysis, email reports
 │   ├── scheduler/        # weekly weekday/weekend cycle
+│   ├── utils/            # shared helpers
 │   └── api/              # FastAPI server (controllers)
 ├── frontend/             # React Native (Expo) app (view)
+├── web/                  # web front end
 ├── workflows/            # 7 numbered SOPs, one per pipeline stage
+├── phases/               # build phases 00–12 (how NEXUS is developed)
 ├── tests/                # pytest suite
 ├── .env.example          # template for API keys (real .env is git-ignored)
+├── AGENTS.md             # rules for AI coding assistants
+├── CLAUDE.md             # points Claude Code to AGENTS.md
 ├── run_nexus.sh          # starts the FastAPI server + scheduler together
 └── requirements.txt
 ```
@@ -118,13 +130,13 @@ NEXUS Trade/
 
 | Phase | Topic | Nexus deliverable | Status |
 |---|---|---|---|
-| 00 | Environment and Setup | Repo, virtual env, `.gitignore`, `.env.example` | ⬜ |
+| 00 | Environment and Setup | Virtual env, `.gitignore`, `.env.example`, `docs/`, executive summary | ⬜ |
 | 01 | Requirements and Domain Modeling | User stories and domain model in `docs/` | ⬜ |
-| 02 | From Design to Objects | `Candle`, `Instrument`, `Trade`, `Account` dataclasses | ⬜ |
-| 03 | Connecting Objects | `Chart` holds candles, `Account` holds trades | ⬜ |
-| 04 | Inheritance | `Order` hierarchy | ⬜ |
-| 05 | Polymorphism and Interfaces | `Strategy` base class and SMC strategies | ⬜ |
-| 06 | Growing the Object Model | `RiskManager`, `Session`, confluence scoring | ⬜ |
+| 02 | From Design to Objects | Phase 01 entities as Python classes in `tools/models/` | ⬜ |
+| 03 | Connecting Objects | Object references between domain classes (no collections yet) | ⬜ |
+| 04 | Inheritance | One superclass with at least two subclasses | ⬜ |
+| 05 | Polymorphism and Interfaces | One interface (ABC) used polymorphically, plus domain expansion | ⬜ |
+| 06 | Growing the Object Model | Typed collections, composition over inheritance, full domain review | ⬜ |
 | 07 | Evaluating OO Design | Design review notes in `docs/design/` | ⬜ |
 | 08 | Factory and Builder | `OrderFactory`, `TradePlanBuilder` | ⬜ |
 | 09 | Adapter and Facade | `OandaAdapter`, `TradingFacade` | ⬜ |
