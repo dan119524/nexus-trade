@@ -136,10 +136,7 @@ Results: `tests/models/` gives 91 passed. The full suite gives 178 passed and 2 
 
 - `phase-02-v1` points to commit `0774262`, the implementation before review.
 - `ef0d3fd`, the reviewed state, is pushed to `origin/phase-02`.
-- These changes are uncommitted on `phase-02`:
-  - modified: `docs/design/uml/domain-model.puml`, `docs/design/uml/crc.puml`
-  - modified: `docs/evolution/phase-02.md`
-  - added: `tests/models/`
+- Commit `16e791d` ("Auto-save 2026-10-16 15:22"), also pushed to `origin/phase-02`, contains the diagram sync (`domain-model.puml`, `crc.puml`), the `tests/models/` tests, and a version of this record. Claude Code did not create that commit.
 - No files in `tools/` outside `tools/models/` changed since `phase-01-completed`.
 
 ## Verification Confirmation
