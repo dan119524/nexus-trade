@@ -21,7 +21,7 @@ def _build_client(env: str) -> API:
     api_key = os.getenv("OANDA_API_KEY")
     if not api_key:
         raise EnvironmentError("OANDA_API_KEY not set in .env")
-    environment = "practice" if env == "practice" else "live"
+    environment = "live" if env == "live" else "practice"
     return API(access_token=api_key, environment=environment)
 
 

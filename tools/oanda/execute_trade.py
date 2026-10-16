@@ -40,7 +40,7 @@ def _build_client() -> tuple[API, str]:
     if not account_id:
         raise EnvironmentError("OANDA_ACCOUNT_ID not set in .env")
 
-    environment = "practice" if env == "practice" else "live"
+    environment = "live" if env == "live" else "practice"
     return API(access_token=api_key, environment=environment), account_id
 
 
