@@ -99,7 +99,7 @@ NEXUS Trade/
 │   ├── design/           # requirements.md, domain model, class diagrams, design decisions
 │   └── evolution/        # what changed in each phase and why
 ├── tools/
-│   ├── models/           # Candle, Instrument, Signal, Trade, Account...
+│   ├── models/           # CurrencyPair, TradeSetup, BacktestResult
 │   ├── oanda/            # candles, instruments, account, execution, streaming
 │   ├── analysis/         # swing detection, trend, BOS/CHoCH, channels
 │   ├── strategy/         # Strategy base class and SMC strategies
