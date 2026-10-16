@@ -16,6 +16,13 @@ def validate_pair_name(name):
     return name
 
 
+def validate_pair(pair):
+    """Return pair if it is a CurrencyPair. Otherwise raise ValueError."""
+    if not isinstance(pair, CurrencyPair):
+        raise ValueError(f"pair must be a CurrencyPair, got {pair!r}")
+    return pair
+
+
 def to_price(value, label):
     """Return value as a float if it is a finite number. Otherwise raise ValueError."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):

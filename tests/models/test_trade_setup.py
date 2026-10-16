@@ -1,4 +1,4 @@
-"""Phase 02 tests for TradeSetup. Fixed prices only; no OANDA API calls."""
+"""Phase 02 and 03 tests for TradeSetup. Fixed prices only; no OANDA API calls."""
 
 import pytest
 
@@ -8,8 +8,8 @@ NAN = float("nan")
 INF = float("inf")
 
 
-def test_valid_buy_stores_values():
-    setup = TradeSetup("EUR_USD", "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+def test_valid_buy_stores_values(eur_usd):
+    setup = TradeSetup(eur_usd, "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
 
     assert setup.pair_name == "EUR_USD"
     assert setup.direction == "buy"
@@ -18,8 +18,8 @@ def test_valid_buy_stores_values():
     assert setup.take_profit == 1.1000
 
 
-def test_valid_sell_stores_values():
-    setup = TradeSetup("GBP_USD", "sell", entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
+def test_valid_sell_stores_values(gbp_usd):
+    setup = TradeSetup(gbp_usd, "sell", entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
 
     assert setup.pair_name == "GBP_USD"
     assert setup.direction == "sell"
@@ -28,24 +28,44 @@ def test_valid_sell_stores_values():
     assert setup.take_profit == 1.2550
 
 
-def test_integer_prices_are_stored_as_floats():
-    setup = TradeSetup("USD_JPY", "buy", entry=150, stop_loss=149, take_profit=153)
+def test_integer_prices_are_stored_as_floats(usd_jpy):
+    setup = TradeSetup(usd_jpy, "buy", entry=150, stop_loss=149, take_profit=153)
 
     assert isinstance(setup.entry, float)
     assert isinstance(setup.stop_loss, float)
     assert isinstance(setup.take_profit, float)
 
 
-@pytest.mark.parametrize("pair_name", ["EUR/USD", "eurusd", "EUR_EUR", None])
-def test_invalid_pair_name_raises_value_error(pair_name):
+def test_pair_is_the_currency_pair_object_passed_in(eur_usd):
+    setup = TradeSetup(eur_usd, "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+
+    assert setup.pair is eur_usd
+    assert setup.pair_name == eur_usd.name
+
+
+def test_setup_can_use_its_pair(eur_usd):
+    setup = TradeSetup(eur_usd, "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+
+    assert setup.pair.market_structure() == "uptrend"
+
+
+def test_pair_is_read_only(eur_usd, gbp_usd):
+    setup = TradeSetup(eur_usd, "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+
+    with pytest.raises(AttributeError):
+        setup.pair = gbp_usd
+
+
+@pytest.mark.parametrize("pair", ["EUR_USD", None, 1, ("EUR_USD", [(1.09, 1.08), (1.10, 1.09)])])
+def test_pair_that_is_not_a_currency_pair_raises_value_error(pair):
     with pytest.raises(ValueError):
-        TradeSetup(pair_name, "buy", entry=1.09, stop_loss=1.08, take_profit=1.11)
+        TradeSetup(pair, "buy", entry=1.09, stop_loss=1.08, take_profit=1.11)
 
 
 @pytest.mark.parametrize("direction", ["BUY", "long", "", None])
-def test_wrong_direction_raises_value_error(direction):
+def test_wrong_direction_raises_value_error(direction, eur_usd):
     with pytest.raises(ValueError):
-        TradeSetup("EUR_USD", direction, entry=1.09, stop_loss=1.08, take_profit=1.11)
+        TradeSetup(eur_usd, direction, entry=1.09, stop_loss=1.08, take_profit=1.11)
 
 
 @pytest.mark.parametrize("prices", [
@@ -59,14 +79,14 @@ def test_wrong_direction_raises_value_error(direction):
     {"entry": "1.09", "stop_loss": 1.08, "take_profit": 1.11},
     {"entry": True, "stop_loss": 1.08, "take_profit": 1.11},
 ])
-def test_invalid_price_raises_value_error(prices):
+def test_invalid_price_raises_value_error(prices, eur_usd):
     with pytest.raises(ValueError):
-        TradeSetup("EUR_USD", "buy", **prices)
+        TradeSetup(eur_usd, "buy", **prices)
 
 
-def test_sell_with_zero_take_profit_raises_value_error():
+def test_sell_with_zero_take_profit_raises_value_error(eur_usd):
     with pytest.raises(ValueError):
-        TradeSetup("EUR_USD", "sell", entry=1.09, stop_loss=1.10, take_profit=0)
+        TradeSetup(eur_usd, "sell", entry=1.09, stop_loss=1.10, take_profit=0)
 
 
 @pytest.mark.parametrize("entry, stop_loss, take_profit", [
@@ -75,9 +95,9 @@ def test_sell_with_zero_take_profit_raises_value_error():
     (1.09, 1.09, 1.11),  # stop loss equal to entry
     (1.09, 1.08, 1.09),  # take profit equal to entry
 ])
-def test_buy_with_wrong_price_order_raises_value_error(entry, stop_loss, take_profit):
+def test_buy_with_wrong_price_order_raises_value_error(entry, stop_loss, take_profit, eur_usd):
     with pytest.raises(ValueError):
-        TradeSetup("EUR_USD", "buy", entry=entry, stop_loss=stop_loss, take_profit=take_profit)
+        TradeSetup(eur_usd, "buy", entry=entry, stop_loss=stop_loss, take_profit=take_profit)
 
 
 @pytest.mark.parametrize("entry, stop_loss, take_profit", [
@@ -86,25 +106,25 @@ def test_buy_with_wrong_price_order_raises_value_error(entry, stop_loss, take_pr
     (1.09, 1.09, 1.07),  # stop loss equal to entry
     (1.09, 1.10, 1.09),  # take profit equal to entry
 ])
-def test_sell_with_wrong_price_order_raises_value_error(entry, stop_loss, take_profit):
+def test_sell_with_wrong_price_order_raises_value_error(entry, stop_loss, take_profit, eur_usd):
     with pytest.raises(ValueError):
-        TradeSetup("EUR_USD", "sell", entry=entry, stop_loss=stop_loss, take_profit=take_profit)
+        TradeSetup(eur_usd, "sell", entry=entry, stop_loss=stop_loss, take_profit=take_profit)
 
 
-def test_reward_to_risk_for_buy():
-    setup = TradeSetup("USD_JPY", "buy", entry=150.0, stop_loss=149.0, take_profit=153.0)
-
-    assert setup.reward_to_risk() == pytest.approx(3.0)
-
-
-def test_reward_to_risk_for_sell():
-    setup = TradeSetup("GBP_USD", "sell", entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
+def test_reward_to_risk_for_buy(usd_jpy):
+    setup = TradeSetup(usd_jpy, "buy", entry=150.0, stop_loss=149.0, take_profit=153.0)
 
     assert setup.reward_to_risk() == pytest.approx(3.0)
 
 
-def test_reward_to_risk_below_two_is_returned_not_rejected():
+def test_reward_to_risk_for_sell(gbp_usd):
+    setup = TradeSetup(gbp_usd, "sell", entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
+
+    assert setup.reward_to_risk() == pytest.approx(3.0)
+
+
+def test_reward_to_risk_below_two_is_returned_not_rejected(usd_jpy):
     # FR2's minimum of 2 is deferred in Phase 02 (finding 7).
-    setup = TradeSetup("USD_JPY", "buy", entry=150.0, stop_loss=148.0, take_profit=151.0)
+    setup = TradeSetup(usd_jpy, "buy", entry=150.0, stop_loss=148.0, take_profit=151.0)
 
     assert setup.reward_to_risk() == pytest.approx(0.5)

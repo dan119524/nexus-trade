@@ -30,6 +30,6 @@ class BacktestResult {
   Know the number of wins
   .. Collaborators ..
   CurrencyPair
-  TradeSetup
+  TradeSetup (Phase 06)
 }
 @enduml

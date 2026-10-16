@@ -52,20 +52,22 @@
 | Responsibilities | Collaborators |
 |---|---|
 | Know which currency pair was tested | CurrencyPair |
-| Know which trade setups were tested | TradeSetup |
+| Know which trade setups were tested | TradeSetup (Phase 06) |
 | Know its number of trades and its win rate | |
 | Know when the test was run | |
 | Know the number of wins | |
 
 ## Relationships and Multiplicities
 
-| From | Relationship | To | Multiplicity |
-|---|---|---|---|
-| CurrencyPair | has | TradeSetup | `1` to `0..*` |
-| CurrencyPair | has | BacktestResult | `1` to `0..*` |
-| BacktestResult | is based on | TradeSetup | `0..1` to `0..*` |
+| From | Relationship | To | Multiplicity | Classification |
+|---|---|---|---|---|
+| CurrencyPair | has | TradeSetup | `1` to `0..*` | Association |
+| CurrencyPair | has | BacktestResult | `1` to `0..*` | Association |
+| BacktestResult | is based on | TradeSetup | `0..1` to `0..*` | Aggregation |
 
 - Each trade setup belongs to exactly one currency pair. A pair can have no setups.
 - Each backtest result belongs to exactly one currency pair. A pair can have no backtest results yet.
 - A backtest result is based on zero or more trade setups, since a test may find none. A trade setup belongs to at most one backtest result, because a live suggestion is not part of any backtest.
 - All trade setups in a backtest result must belong to the same currency pair as that backtest result.
+- The two CurrencyPair associations are one-way: each TradeSetup and each BacktestResult holds a reference to its CurrencyPair, and a CurrencyPair holds no references to its setups or results.
+- The BacktestResult–TradeSetup aggregation and the same-pair rule are implemented in Phase 06, when collections are introduced.

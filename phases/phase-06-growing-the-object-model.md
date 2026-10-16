@@ -4,7 +4,7 @@
 
 - Phase 05 is merged and tagged `phase-05-completed`.
 - Local `main` is synced with GitHub and clean.
-- The demo runs and `pytest` passes.
+- The demo runs and `pytest` shows no new test failures.
 - Review your entities, relationships, multiplicities, hierarchies, and interfaces. Note any design limitations and any one-to-many relationships that are still single references.
 
 ---
@@ -15,7 +15,7 @@
 2. Save this file as `phases/phase-06-growing-the-object-model.md`.
 3. Send Claude Code:
 
-> Phase 06 start check. Confirm: `phase-05-completed` exists on the remote and points to a commit on `main`; the current branch is `phase-06` and starts from `phase-05-completed`; the working tree is clean; `pytest` passes. Report PHASE-05 COMPLETION: VERIFIED and PHASE-06 START CHECK: PASS, or BLOCKED with the reason. Do not modify anything.
+> Phase 06 start check. Confirm: `phase-05-completed` exists on the remote and points to a commit on `main`; the current branch is `phase-06` and starts from `phase-05-completed`; the working tree is clean; `pytest` shows no new test failures. Report PHASE-05 COMPLETION: VERIFIED and PHASE-06 START CHECK: PASS, or BLOCKED with the reason. Do not modify anything.
 
 Don't continue until it reports **PHASE-06 START CHECK: PASS**.
 
@@ -58,7 +58,7 @@ pytest
 
 Send Claude Code:
 
-> Phase 06 v1 check, read-only. Confirm: one design limitation was refactored using composition, delegation, or interface-based polymorphism, and requirements.md explains it; existing behavior is preserved; one one-to-many relationship uses a typed `list`, `set`, or `dict`, stored privately with validated add and get/remove methods, and not exposed directly; `demo.py` shows both, with at least two objects in the collection; the demo runs and `pytest` passes. Report PHASE-06 V1: READY or BLOCKED with the reason. Do not modify anything.
+> Phase 06 v1 check, read-only. Confirm: one design limitation was refactored using composition, delegation, or interface-based polymorphism, and requirements.md explains it; existing behavior is preserved; one one-to-many relationship uses a typed `list`, `set`, or `dict`, stored privately with validated add and get/remove methods, and not exposed directly; `demo.py` shows both, with at least two objects in the collection; the demo runs and `pytest` shows no new test failures. Report PHASE-06 V1: READY or BLOCKED with the reason. Do not modify anything.
 
 If **BLOCKED**, fix it (Claude Code can help) and run the check again. Once it reports **PHASE-06 V1: READY**:
 
@@ -80,7 +80,7 @@ Send Claude Code:
 
 Decide on each recommendation with a reason. Then send:
 
-> Implement my decisions. Preserve valid inheritance, interfaces, polymorphism, and existing behavior. Keep existing exception behavior. Update requirements.md, `crc.puml`, `domain-model.puml`, and `docs/evolution/phase-06.md`. Extend `demo.py` and the pytest suite, and run all tests. Report PHASE-06 OBJECT MODEL: COMPLETE only when the demo runs, all tests pass, and docs match the code.
+> Implement my decisions. Preserve valid inheritance, interfaces, polymorphism, and existing behavior. Keep existing exception behavior. Update requirements.md, `crc.puml`, `domain-model.puml`, and `docs/evolution/phase-06.md`. Extend `demo.py` and the pytest suite, and run all tests. Report PHASE-06 OBJECT MODEL: COMPLETE only when the demo runs, `pytest` shows no new test failures, and docs match the code.
 
 Rules:
 
@@ -97,7 +97,7 @@ Don't continue until it reports **PHASE-06 OBJECT MODEL: COMPLETE**. Check every
 
 Send Claude Code:
 
-> Run the Phase 06 final review and check. Do one light review and list important recommendations, marked advisory. Then report PASS or FAIL with evidence for each: remaining one-to-many relationships use typed collections with proper add/get/remove methods; inheritance decisions were evaluated and improved where justified; placeholder behavior was replaced where requirements support it; Phase 03–05 work is preserved; requirements, CRC, and domain model match the code; all of `pytest` passes; `docs/evolution/phase-06.md` exists; `phase-06-v1` exists; no patterns, persistence, or service layers were added; no files outside `tools/models/`, `tests/`, `docs/`, and `phases/` changed; no secrets in the diff. Report PHASE-06: PASSED or FAILED. Only block on required objectives, build or test failures, or AGENTS.md rules, not on advisory recommendations I decline with a reason.
+> Run the Phase 06 final review and check. Do one light review and list important recommendations, marked advisory. Then report PASS or FAIL with evidence for each: remaining one-to-many relationships use typed collections with proper add/get/remove methods; inheritance decisions were evaluated and improved where justified; placeholder behavior was replaced where requirements support it; Phase 03–05 work is preserved; requirements, CRC, and domain model match the code; `pytest` shows no new test failures; `docs/evolution/phase-06.md` exists; `phase-06-v1` exists; no patterns, persistence, or service layers were added; no files outside `tools/models/`, `tests/`, `docs/`, and `phases/` changed; no secrets in the diff. Report PHASE-06: PASSED or FAILED. Only block on required objectives, build or test failures, or AGENTS.md rules, not on advisory recommendations I decline with a reason.
 
 Decide on each recommendation yourself. Continue until it reports **PHASE-06: PASSED**.
 
@@ -105,13 +105,13 @@ Decide on each recommendation yourself. Continue until it reports **PHASE-06: PA
 
 ## 6 · Merge and Tag
 
-1. Stage only the intended files and inspect the staged diff.
-2. Commit: `Complete Phase 06 growing the object model`
-3. Push `phase-06`.
-4. Open a PR from `phase-06` into `main` and merge it.
-5. Sync local `main`.
-6. Create and push the annotated tag `phase-06-completed`.
-7. Change Phase 06's ⬜ to ✅ in the README.
+1. Change Phase 06's ⬜ to ✅ in the README.
+2. Stage only the intended files and inspect the staged diff.
+3. Commit: `Complete Phase 06 growing the object model`
+4. Push `phase-06`.
+5. Open a PR from `phase-06` into `main` and merge it.
+6. Sync local `main`.
+7. Create and push the annotated tag `phase-06-completed`.
 8. Run `git status` on `main`. It must be clean.
 
 **Phase 06 is complete when** `phase-06-v1` and `phase-06-completed` both exist on GitHub and `main` is clean. Phase 07 can't start without `phase-06-completed`.
