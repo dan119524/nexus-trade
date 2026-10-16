@@ -36,7 +36,7 @@ git branch --show-current
 
 ## Step 2: Update requirements
 
-Add or change user stories and constraints in `docs/requirements/` for what this phase adds. This is your decision, not the agent's.
+Add or change user stories and constraints in `docs/design/requirements.md` for what this phase adds. This is your decision, not the agent's.
 
 ## Step 3: Design
 
@@ -73,7 +73,7 @@ git push origin phase-NN-v1
 
 Paste this prompt to the agent:
 
-> Run an engineering review for phase NN. Read AGENTS.md, the README roadmap, `docs/requirements/`, `docs/design/`, the code, and the tests. Check the work against this phase's topic only. List concrete problems with file evidence, and separate real problems from optional ideas. Do not modify any files.
+> Run an engineering review for phase NN. Read AGENTS.md, the README roadmap, `docs/design/requirements.md`, `docs/design/`, the code, and the tests. Check the work against this phase's topic only. List concrete problems with file evidence, and separate real problems from optional ideas. Do not modify any files.
 
 ## Step 8: Decide on findings
 
@@ -81,7 +81,7 @@ For each finding, choose **accept**, **modify**, **reject**, or **defer**. Make 
 
 ## Step 9: Sync design docs
 
-> Sync the design docs for phase NN. Compare `docs/design/` with `docs/requirements/` and the current code. Update diagrams to match what is actually implemented. Do not invent anything. If requirements, code, and docs disagree, report it instead of fixing it.
+> Sync the design docs for phase NN. Compare `docs/design/` with `docs/design/requirements.md` and the current code. Update diagrams to match what is actually implemented. Do not invent anything. If requirements, code, and docs disagree, report it instead of fixing it.
 
 ## Step 10: Evolution record
 

@@ -96,8 +96,7 @@ Domain classes live in `tools/models/`. Design diagrams live in `docs/design/`.
 ```
 NEXUS Trade/
 ├── docs/
-│   ├── requirements/     # user stories, constraints
-│   ├── design/           # domain model, class diagrams, design decisions
+│   ├── design/           # requirements.md, domain model, class diagrams, design decisions
 │   └── evolution/        # what changed in each phase and why
 ├── tools/
 │   ├── models/           # Candle, Instrument, Signal, Trade, Account...
@@ -131,7 +130,7 @@ NEXUS Trade/
 | Phase | Topic | Nexus deliverable | Status |
 |---|---|---|---|
 | 00 | Environment and Setup | Virtual env, `.gitignore`, `.env.example`, `docs/`, executive summary | ✅ |
-| 01 | Requirements and Domain Modeling | User stories and domain model in `docs/` | ⬜ |
+| 01 | Requirements and Domain Modeling | User stories and domain model in `docs/` | ✅ |
 | 02 | From Design to Objects | Phase 01 entities as Python classes in `tools/models/` | ⬜ |
 | 03 | Connecting Objects | Object references between domain classes (no collections yet) | ⬜ |
 | 04 | Inheritance | One superclass with at least two subclasses | ⬜ |

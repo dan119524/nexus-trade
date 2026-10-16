@@ -1,0 +1,19 @@
+@startuml use-cases
+' Source: docs/design/requirements.md, section "Use Cases"
+skinparam classAttributeIconSize 0
+left to right direction
+
+actor Trader
+
+rectangle "NEXUS Trade" {
+  usecase "UC1: Review the market structure\nof a currency pair" as UC1
+  usecase "UC2: Review a suggested trade setup\nbefore deciding whether to act on it" as UC2
+  usecase "UC3: Backtest trade setups for a\ncurrency pair on past price data" as UC3
+  usecase "UC4: See which currency pairs\nperformed best in backtests" as UC4
+}
+
+Trader -- UC1
+Trader -- UC2
+Trader -- UC3
+Trader -- UC4
+@enduml

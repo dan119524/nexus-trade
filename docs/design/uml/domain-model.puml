@@ -1,0 +1,18 @@
+@startuml domain-model
+' Source: docs/design/requirements.md, sections "Domain Entities" and
+' "Relationships and Multiplicities". requirements.md defines no attributes
+' or methods yet, so the classes are shown by name only.
+skinparam classAttributeIconSize 0
+hide empty members
+
+class CurrencyPair
+class TradeSetup
+class BacktestResult
+
+CurrencyPair "1" -- "0..*" TradeSetup : has >
+CurrencyPair "1" -- "0..*" BacktestResult : has >
+BacktestResult "0..1" -- "0..*" TradeSetup : is based on >
+
+note "All trade setups in a backtest result must belong\nto the same currency pair as that backtest result." as SamePair
+SamePair .. BacktestResult
+@enduml
