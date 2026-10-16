@@ -1,0 +1,35 @@
+@startuml crc
+' Source: docs/design/requirements.md, section "CRC Analysis"
+' CRC cards only: no relationship arrows between cards.
+skinparam classAttributeIconSize 0
+hide circle
+
+class CurrencyPair {
+  .. Responsibilities ..
+  Know its name (for example, EUR/USD)
+  Know its past price data
+  Know its current market structure
+  .. Collaborators ..
+  TradeSetup
+  BacktestResult
+}
+
+class TradeSetup {
+  .. Responsibilities ..
+  Know which currency pair it belongs to
+  Know its direction, entry price, stop loss, and take profit
+  Know whether its risk is within the set risk limit
+  .. Collaborators ..
+  CurrencyPair
+}
+
+class BacktestResult {
+  .. Responsibilities ..
+  Know which currency pair was tested
+  Know which trade setups were tested
+  Know its number of trades and its win rate
+  .. Collaborators ..
+  CurrencyPair
+  TradeSetup
+}
+@enduml

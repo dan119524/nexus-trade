@@ -86,7 +86,7 @@ Workflows should improve as you learn. But **do not create or overwrite a workfl
 
 ## 6. Requirements First
 
-`docs/requirements/` is the source of truth for what NEXUS should do.
+`docs/design/requirements.md` is the source of truth for what NEXUS should do.
 
 - Requirements drive design and code, not the other way around.
 - Do not change requirements to match existing code.

@@ -96,8 +96,7 @@ Domain classes live in `tools/models/`. Design diagrams live in `docs/design/`.
 ```
 NEXUS Trade/
 ├── docs/
-│   ├── requirements/     # user stories, constraints
-│   ├── design/           # domain model, class diagrams, design decisions
+│   ├── design/           # requirements.md, domain model, class diagrams, design decisions
 │   └── evolution/        # what changed in each phase and why
 ├── tools/
 │   ├── models/           # Candle, Instrument, Signal, Trade, Account...
