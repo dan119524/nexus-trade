@@ -1,13 +1,55 @@
 @startuml domain-model
-' Source: docs/design/requirements.md, sections "Domain Entities" and
-' "Relationships and Multiplicities". requirements.md defines no attributes
-' or methods yet, so the classes are shown by name only.
+' Sources: docs/design/requirements.md, sections "Domain Entities" and
+' "Relationships and Multiplicities", for the classes and relationships.
+' tools/models/ (Phase 02) for the attributes and public methods.
+' Attributes are private (-) and exposed as read-only @property (+). No setters.
 skinparam classAttributeIconSize 0
 hide empty members
 
-class CurrencyPair
-class TradeSetup
-class BacktestResult
+class CurrencyPair {
+  - _name : str
+  - _price_data : tuple[tuple[float, float], ...]
+  + __init__(name : str, price_data)
+  .. read-only properties ..
+  + name : str
+  + price_data : tuple[tuple[float, float], ...]
+  .. methods ..
+  + market_structure() : str
+}
+
+class TradeSetup {
+  - _pair_name : str
+  - _direction : str
+  - _entry : float
+  - _stop_loss : float
+  - _take_profit : float
+  + __init__(pair_name : str, direction : str, entry : float, stop_loss : float, take_profit : float)
+  .. read-only properties ..
+  + pair_name : str
+  + direction : str
+  + entry : float
+  + stop_loss : float
+  + take_profit : float
+  .. methods ..
+  + reward_to_risk() : float
+}
+
+class BacktestResult {
+  - _pair_name : str
+  - _test_date : date
+  - _setups_tested : int
+  - _trade_count : int
+  - _win_count : int
+  + __init__(pair_name : str, test_date : date, setups_tested : int, trade_count : int, win_count : int)
+  .. read-only properties ..
+  + pair_name : str
+  + test_date : date
+  + setups_tested : int
+  + trade_count : int
+  + win_count : int
+  .. methods ..
+  + win_rate() : float | None
+}
 
 CurrencyPair "1" -- "0..*" TradeSetup : has >
 CurrencyPair "1" -- "0..*" BacktestResult : has >
@@ -15,4 +57,13 @@ BacktestResult "0..1" -- "0..*" TradeSetup : is based on >
 
 note "All trade setups in a backtest result must belong\nto the same currency pair as that backtest result." as SamePair
 SamePair .. BacktestResult
+
+note as SharedHelpers
+  Shared helper functions (module-level, not classes)
+  in tools/models/currency_pair.py:
+  + validate_pair_name(name) : str
+      used by CurrencyPair, TradeSetup, BacktestResult
+  + to_price(value, label) : float
+      used by CurrencyPair, TradeSetup
+end note
 @enduml

@@ -6,7 +6,7 @@ hide circle
 
 class CurrencyPair {
   .. Responsibilities ..
-  Know its name (for example, EUR/USD)
+  Know its name (for example, EUR_USD)
   Know its past price data
   Know its current market structure
   .. Collaborators ..
