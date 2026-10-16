@@ -38,9 +38,9 @@ python -m tools.models.demo
 pytest
 ```
 
-**No lists, dicts, or sets for relationships yet.** If a relationship is one-to-many, connect a single object for now. Collections come in Phase 06.
+**No lists, dicts, or sets for relationships yet.** If a relationship is one-to-many, connect a single object, or record the relationship as deferred in requirements.md. Collections come in Phase 06.
 
-No inheritance, interfaces, or patterns. Don't change anything outside `tools/models/`.
+No inheritance, interfaces, or patterns. Don't change anything outside `tools/models/`, `tests/models/`, `docs/`, and `phases/`.
 
 ---
 
@@ -75,13 +75,13 @@ Continue until it reports **PHASE-03: PASSED**. Open the changed diagrams in PyC
 
 ## 5 · Merge and Tag
 
-1. Stage only the intended files and inspect the staged diff.
-2. Commit: `Complete Phase 03 connecting objects`
-3. Push `phase-03`.
-4. Open a PR from `phase-03` into `main` and merge it.
-5. Sync local `main`.
-6. Create and push the annotated tag `phase-03-completed`.
-7. Change Phase 03's ⬜ to ✅ in the README.
+1. Change Phase 03's ⬜ to ✅ in the README.
+2. Stage only the intended files and inspect the staged diff.
+3. Commit: `Complete Phase 03 connecting objects`
+4. Push `phase-03`.
+5. Open a PR from `phase-03` into `main` and merge it.
+6. Sync local `main`.
+7. Create and push the annotated tag `phase-03-completed`.
 8. Run `git status` on `main`. It must be clean.
 
 **Phase 03 is complete when** `phase-03-v1` and `phase-03-completed` both exist on GitHub and `main` is clean.

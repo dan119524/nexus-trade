@@ -101,13 +101,13 @@ Decide on each recommendation yourself. Continue until it reports **PHASE-05: PA
 
 ## 6 · Merge and Tag
 
-1. Stage only the intended files and inspect the staged diff.
-2. Commit: `Complete Phase 05 polymorphism, interfaces, and domain expansion`
-3. Push `phase-05`.
-4. Open a PR from `phase-05` into `main` and merge it.
-5. Sync local `main`.
-6. Create and push the annotated tag `phase-05-completed`.
-7. Change Phase 05's ⬜ to ✅ in the README.
+1. Change Phase 05's ⬜ to ✅ in the README.
+2. Stage only the intended files and inspect the staged diff.
+3. Commit: `Complete Phase 05 polymorphism, interfaces, and domain expansion`
+4. Push `phase-05`.
+5. Open a PR from `phase-05` into `main` and merge it.
+6. Sync local `main`.
+7. Create and push the annotated tag `phase-05-completed`.
 8. Run `git status` on `main`. It must be clean.
 
 **Phase 05 is complete when** `phase-05-v1` and `phase-05-completed` both exist on GitHub and `main` is clean. Phase 06 can't start without `phase-05-completed`.

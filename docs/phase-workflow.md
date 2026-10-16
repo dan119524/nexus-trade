@@ -89,11 +89,13 @@ For each finding, choose **accept**, **modify**, **reject**, or **defer**. Make 
 
 ## Step 11: Phase check
 
-> Check phase NN. Using the README roadmap row for this phase, list each deliverable as PASS or FAIL with file evidence. Confirm `pytest` passes and no secrets are in the diff. Do not fix anything.
+> Check phase NN. Using the README roadmap row for this phase, list each deliverable as PASS or FAIL with file evidence. Confirm `pytest` shows no new test failures and no secrets are in the diff. Do not fix anything.
 
 If anything fails, fix it and run the check again.
 
 ## Step 12: Merge and final tag
+
+First, change the phase's ⬜ to ✅ in the README roadmap. Then:
 
 ```bash
 git add <exact files>
@@ -109,5 +111,3 @@ git pull
 git tag -a phase-NN-completed -m "Phase NN completed"
 git push origin phase-NN-completed
 ```
-
-Finally, change the phase's ⬜ to ✅ in the README roadmap.

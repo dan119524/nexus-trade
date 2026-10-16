@@ -1,7 +1,7 @@
 @startuml domain-model
 ' Sources: docs/design/requirements.md, sections "Domain Entities" and
 ' "Relationships and Multiplicities", for the classes and relationships.
-' tools/models/ (Phase 02) for the attributes and public methods.
+' tools/models/ (Phase 03) for the attributes, public methods, and object references.
 ' Attributes are private (-) and exposed as read-only @property (+). No setters.
 skinparam classAttributeIconSize 0
 hide empty members
@@ -18,13 +18,14 @@ class CurrencyPair {
 }
 
 class TradeSetup {
-  - _pair_name : str
+  - _pair : CurrencyPair
   - _direction : str
   - _entry : float
   - _stop_loss : float
   - _take_profit : float
-  + __init__(pair_name : str, direction : str, entry : float, stop_loss : float, take_profit : float)
+  + __init__(pair : CurrencyPair, direction : str, entry : float, stop_loss : float, take_profit : float)
   .. read-only properties ..
+  + pair : CurrencyPair
   + pair_name : str
   + direction : str
   + entry : float
@@ -35,13 +36,14 @@ class TradeSetup {
 }
 
 class BacktestResult {
-  - _pair_name : str
+  - _pair : CurrencyPair
   - _test_date : date
   - _setups_tested : int
   - _trade_count : int
   - _win_count : int
-  + __init__(pair_name : str, test_date : date, setups_tested : int, trade_count : int, win_count : int)
+  + __init__(pair : CurrencyPair, test_date : date, setups_tested : int, trade_count : int, win_count : int)
   .. read-only properties ..
+  + pair : CurrencyPair
   + pair_name : str
   + test_date : date
   + setups_tested : int
@@ -51,16 +53,22 @@ class BacktestResult {
   + win_rate() : float | None
 }
 
-CurrencyPair "1" -- "0..*" TradeSetup : has >
-CurrencyPair "1" -- "0..*" BacktestResult : has >
-BacktestResult "0..1" -- "0..*" TradeSetup : is based on >
+CurrencyPair "1" <-- "0..*" TradeSetup : has >
+CurrencyPair "1" <-- "0..*" BacktestResult : has >
+BacktestResult "0..1" o-- "0..*" TradeSetup : is based on >
+
+note on link
+  planned, not yet implemented (Phase 06)
+end note
 
 note "All trade setups in a backtest result must belong\nto the same currency pair as that backtest result." as SamePair
 SamePair .. BacktestResult
 
 note as AssociationLinks
-  The three associations above are linked by pair_name only;
-  object references and same-pair check in Phase 03.
+  The two CurrencyPair associations are one-way object references:
+  TradeSetup and BacktestResult each hold their CurrencyPair;
+  CurrencyPair holds no references back.
+  Same-pair check: planned, not yet implemented (Phase 06).
 end note
 AssociationLinks .. CurrencyPair
 
@@ -69,6 +77,8 @@ note as SharedHelpers
   in tools/models/currency_pair.py:
   + validate_pair_name(name) : str
       used by CurrencyPair
+  + validate_pair(pair) : CurrencyPair
+      used by TradeSetup, BacktestResult
   + to_price(value, label) : float
       used by CurrencyPair, TradeSetup
 end note
@@ -77,6 +87,7 @@ note as ValidationRules
   Validation rules (design decisions, not stated in requirements.md).
   Each violation raises ValueError in __init__.
   Pair name: OANDA format AAA_BBB, two different currencies.
+  TradeSetup, BacktestResult: pair is a CurrencyPair.
   CurrencyPair: at least 2 (high, low) tuple points;
     prices finite numbers > 0; high >= low.
   TradeSetup: direction "buy" or "sell"; prices finite numbers > 0;

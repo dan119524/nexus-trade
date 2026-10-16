@@ -105,13 +105,13 @@ Decide on each recommendation yourself. Continue until it reports **PHASE-06: PA
 
 ## 6 · Merge and Tag
 
-1. Stage only the intended files and inspect the staged diff.
-2. Commit: `Complete Phase 06 growing the object model`
-3. Push `phase-06`.
-4. Open a PR from `phase-06` into `main` and merge it.
-5. Sync local `main`.
-6. Create and push the annotated tag `phase-06-completed`.
-7. Change Phase 06's ⬜ to ✅ in the README.
+1. Change Phase 06's ⬜ to ✅ in the README.
+2. Stage only the intended files and inspect the staged diff.
+3. Commit: `Complete Phase 06 growing the object model`
+4. Push `phase-06`.
+5. Open a PR from `phase-06` into `main` and merge it.
+6. Sync local `main`.
+7. Create and push the annotated tag `phase-06-completed`.
 8. Run `git status` on `main`. It must be clean.
 
 **Phase 06 is complete when** `phase-06-v1` and `phase-06-completed` both exist on GitHub and `main` is clean. Phase 07 can't start without `phase-06-completed`.

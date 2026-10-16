@@ -89,13 +89,13 @@ If it reports **FAIL**, fix the issue and run it again.
 
 ## 6 · Merge and Tag
 
-1. Stage only the intended files and inspect the staged diff.
-2. Commit: `Complete Phase 04 inheritance`
-3. Push `phase-04`.
-4. Open a PR from `phase-04` into `main` and merge it.
-5. Sync local `main`.
-6. Create and push the annotated tag `phase-04-completed`.
-7. Change Phase 04's ⬜ to ✅ in the README.
+1. Change Phase 04's ⬜ to ✅ in the README.
+2. Stage only the intended files and inspect the staged diff.
+3. Commit: `Complete Phase 04 inheritance`
+4. Push `phase-04`.
+5. Open a PR from `phase-04` into `main` and merge it.
+6. Sync local `main`.
+7. Create and push the annotated tag `phase-04-completed`.
 8. Run `git status` on `main`. It must be clean.
 
 **Phase 04 is complete when** `phase-04-v1` and `phase-04-completed` both exist on GitHub and `main` is clean.

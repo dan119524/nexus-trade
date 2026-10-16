@@ -52,7 +52,7 @@
 | Responsibilities | Collaborators |
 |---|---|
 | Know which currency pair was tested | CurrencyPair |
-| Know which trade setups were tested | TradeSetup |
+| Know which trade setups were tested | TradeSetup (Phase 06) |
 | Know its number of trades and its win rate | |
 | Know when the test was run | |
 | Know the number of wins | |

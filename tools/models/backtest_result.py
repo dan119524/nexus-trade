@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from tools.models.currency_pair import CurrencyPair
+from tools.models.currency_pair import validate_pair
 
 
 def _to_count(value, label):
@@ -18,9 +18,7 @@ class BacktestResult:
     """A backtest outcome: currency pair, test date, and setup, trade, and win counts."""
 
     def __init__(self, pair, test_date, setups_tested, trade_count, win_count):
-        if not isinstance(pair, CurrencyPair):
-            raise ValueError(f"pair must be a CurrencyPair, got {pair!r}")
-        self._pair = pair
+        self._pair = validate_pair(pair)
         if not isinstance(test_date, date):
             raise ValueError(f"test date must be a datetime.date, got {test_date!r}")
         self._test_date = test_date

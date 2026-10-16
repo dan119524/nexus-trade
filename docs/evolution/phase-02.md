@@ -126,9 +126,11 @@ Claude Code reported five points where requirements and code disagree. It did no
 | File | Tests | Coverage |
 |---|---|---|
 | `__init__.py` | — | Empty. Matches `tests/__init__.py`. |
-| `test_currency_pair.py` | 33 | Stored values; invalid names; fewer than 2 points, including from an iterator; non-iterable data; malformed points; NaN, infinity, prices ≤ 0, strings, and bools; high below low; uptrend, downtrend, and 5 ranging cases, including equal highs and lows |
-| `test_trade_setup.py` | 30 | Stored values for buy and sell; invalid names; wrong direction; NaN, infinity, prices ≤ 0, strings, and bools; wrong price order for buy and sell, including equal prices; `reward_to_risk()` for buy (3.0), sell (3.0), and below 2 (0.5, returned, not rejected) |
-| `test_backtest_result.py` | 28 | Stored values, all-zero counts, and equal counts; invalid names and dates; negative and non-whole counts; wins greater than trades; trades greater than setups tested; `win_rate()` of 0.6, 0.0, 1.0, and `None` for zero trades |
+| `test_currency_pair.py` | 37 | Stored values; invalid names; fewer than 2 points, including from an iterator; non-iterable data; malformed points; NaN, infinity, prices ≤ 0, strings, and bools; high below low; uptrend, downtrend, and 5 ranging cases, including equal highs and lows |
+| `test_trade_setup.py` | 32 | Stored values for buy and sell; invalid names; wrong direction; NaN, infinity, prices ≤ 0, strings, and bools; wrong price order for buy and sell, including equal prices; `reward_to_risk()` for buy (3.0), sell (3.0), and below 2 (0.5, returned, not rejected) |
+| `test_backtest_result.py` | 22 | Stored values, all-zero counts, and equal counts; invalid names and dates; negative and non-whole counts; wins greater than trades; trades greater than setups tested; `win_rate()` of 0.6, 0.0, 1.0, and `None` for zero trades |
+
+> **Note:** The per-file counts were corrected in Phase 03. They originally read 33, 30, and 28. The total of 91 was correct.
 
 Results: `tests/models/` gives 91 passed. The full suite gives 178 passed and 2 failed, and the 2 failures are the known failures above.
 
