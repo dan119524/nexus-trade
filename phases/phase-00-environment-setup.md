@@ -141,7 +141,7 @@ Create `.env.example` with placeholder names only (no real values):
 ```
 OANDA_API_KEY=your-practice-api-key
 OANDA_ACCOUNT_ID=your-practice-account-id
-OANDA_ENVIRONMENT=practice
+OANDA_ENV=practice
 ANTHROPIC_API_KEY=your-anthropic-key
 ```
 

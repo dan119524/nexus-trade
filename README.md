@@ -130,7 +130,7 @@ NEXUS Trade/
 
 | Phase | Topic | Nexus deliverable | Status |
 |---|---|---|---|
-| 00 | Environment and Setup | Virtual env, `.gitignore`, `.env.example`, `docs/`, executive summary | ⬜ |
+| 00 | Environment and Setup | Virtual env, `.gitignore`, `.env.example`, `docs/`, executive summary | ✅ |
 | 01 | Requirements and Domain Modeling | User stories and domain model in `docs/` | ⬜ |
 | 02 | From Design to Objects | Phase 01 entities as Python classes in `tools/models/` | ⬜ |
 | 03 | Connecting Objects | Object references between domain classes (no collections yet) | ⬜ |
