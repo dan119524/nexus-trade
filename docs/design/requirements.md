@@ -6,6 +6,8 @@
 |---|---|
 | **CurrencyPair** | A forex market NEXUS analyzes, such as EUR_USD, together with its past price data and its current market structure. |
 | **TradeSetup** | A suggested trade on one currency pair, with a direction, an entry price, a stop loss, and a take profit. |
+| **BuySetup** | A trade setup whose direction is buy. Its stop loss is below its entry, and its take profit is above it. |
+| **SellSetup** | A trade setup whose direction is sell. Its take profit is below its entry, and its stop loss is above it. |
 | **BacktestResult** | The outcome of testing trade setups on one currency pair's past price data, showing how well they would have performed. |
 
 ## Use Cases
@@ -46,6 +48,22 @@
 | Know which currency pair it belongs to | CurrencyPair |
 | Know its direction, entry price, stop loss, and take profit | |
 | Know its reward-to-risk ratio | |
+
+### BuySetup
+
+| Responsibilities | Collaborators |
+|---|---|
+| Know that its direction is buy | |
+| Require stop loss < entry < take profit | |
+| Know its reward (take profit − entry) and its risk (entry − stop loss) | |
+
+### SellSetup
+
+| Responsibilities | Collaborators |
+|---|---|
+| Know that its direction is sell | |
+| Require take profit < entry < stop loss | |
+| Know its reward (entry − take profit) and its risk (stop loss − entry) | |
 
 ### BacktestResult
 
