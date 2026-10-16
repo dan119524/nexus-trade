@@ -139,7 +139,7 @@ Tests live in `tests/` and run with `pytest`. Earlier tests stay as regression p
 
 ## 10. Design Docs and Evolution Records
 
-- Design docs in `docs/design/` show what is **actually implemented**, not future plans.
+- Design docs in `docs/design/` show what is **actually implemented**, not future plans. The exception is Phase 01: before any code exists, design-only diagrams based on `docs/design/requirements.md` are allowed.
 - Do not invent classes, methods, or relationships in diagrams.
 - Use UML visibility: `+` public, `-` private, `#` protected.
 - Each phase gets a record in `docs/evolution/phase-NN.md` describing only what actually happened, based on Git history.

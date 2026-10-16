@@ -10,15 +10,13 @@ class CurrencyPair {
   Know its past price data
   Know its current market structure
   .. Collaborators ..
-  TradeSetup
-  BacktestResult
 }
 
 class TradeSetup {
   .. Responsibilities ..
   Know which currency pair it belongs to
   Know its direction, entry price, stop loss, and take profit
-  Know whether its risk is within the set risk limit
+  Know its reward-to-risk ratio
   .. Collaborators ..
   CurrencyPair
 }

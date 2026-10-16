@@ -14,4 +14,4 @@ NEXUS helps traders make better decisions by analyzing the market, picking trade
 
 ## Initial Scope
 
-NEXUS analyzes, backtests, and suggests trades on an OANDA practice (demo) account only; it will not trade real money, and it will never plan a trade that risks more than the set risk limit.
+NEXUS analyzes, backtests, and suggests trades on an OANDA practice (demo) account only; it will not trade real money, and it will never suggest a trade with a reward-to-risk ratio below 2.

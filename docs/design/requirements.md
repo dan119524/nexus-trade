@@ -21,20 +21,22 @@
 
 | ID | Requirement | Use case |
 |---|---|---|
-| FR1 | NEXUS shall identify the market structure of a selected currency pair as uptrend, downtrend, or ranging, using that pair's past price data. | UC1 |
-| FR2 | NEXUS shall suggest trade setups for a currency pair, each with a direction (buy or sell), an entry price, a stop loss, and a take profit. | UC2 |
-| FR3 | NEXUS shall not suggest any trade setup whose risk is greater than the set risk limit. | UC2 |
-| FR4 | NEXUS shall backtest trade setups for a currency pair on past price data and report the number of trades and the win rate. | UC3 |
-| FR5 | NEXUS shall rank currency pairs from best to worst by their backtest win rate. | UC4 |
+| FR1 | NEXUS shall identify the market structure of a selected currency pair as uptrend, downtrend, or ranging, using that pair's past price data. An uptrend means higher highs and higher lows. A downtrend means lower highs and lower lows. Anything else is ranging. | UC1 |
+| FR2 | NEXUS shall suggest trade setups for a currency pair, each with a direction (buy or sell), an entry price, a stop loss, and a take profit, and shall not suggest any setup with a reward-to-risk ratio below 2. For a buy, stop loss < entry < take profit. For a sell, take profit < entry < stop loss. | UC2 |
+| FR3 | NEXUS shall backtest trade setups for a currency pair on past price data and report the number of trades and the win rate. A win is a trade that hits its take profit before its stop loss. | UC3 |
+| FR4 | NEXUS shall rank currency pairs from best to worst by the win rate of each pair's most recent backtest result. Pairs with zero trades or no backtest result are ranked last. | UC4 |
+| FR5 | NEXUS shall work only with an OANDA practice account and shall never trade real money. | All |
 
 ## CRC Analysis
+
+> **Note:** In Phase 01, the NEXUS system performs the actions in FR1, FR2, FR3, and FR4: identifying market structure, suggesting trade setups, backtesting, and ranking currency pairs. Responsible classes are assigned in later phases.
 
 ### CurrencyPair
 
 | Responsibilities | Collaborators |
 |---|---|
-| Know its name (for example, EUR/USD) | TradeSetup |
-| Know its past price data | BacktestResult |
+| Know its name (for example, EUR/USD) | |
+| Know its past price data | |
 | Know its current market structure | |
 
 ### TradeSetup
@@ -43,7 +45,7 @@
 |---|---|
 | Know which currency pair it belongs to | CurrencyPair |
 | Know its direction, entry price, stop loss, and take profit | |
-| Know whether its risk is within the set risk limit | |
+| Know its reward-to-risk ratio | |
 
 ### BacktestResult
 
@@ -64,3 +66,4 @@
 - Each trade setup belongs to exactly one currency pair. A pair can have no setups.
 - Each backtest result belongs to exactly one currency pair. A pair can have no backtest results yet.
 - A backtest result is based on zero or more trade setups, since a test may find none. A trade setup belongs to at most one backtest result, because a live suggestion is not part of any backtest.
+- All trade setups in a backtest result must belong to the same currency pair as that backtest result.
