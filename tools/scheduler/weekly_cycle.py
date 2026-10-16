@@ -208,7 +208,7 @@ def _check_trade_milestones(open_entries: list[dict], oanda_open: list[dict]) ->
         api_key    = os.getenv("OANDA_API_KEY")
         account_id = os.getenv("OANDA_ACCOUNT_ID")
         env        = os.getenv("OANDA_ENV", "practice")
-        client     = API(access_token=api_key, environment="practice" if env == "practice" else "live")
+        client     = API(access_token=api_key, environment="live" if env == "live" else "practice")
 
         instruments = ",".join({e.get("pair", "") for e in open_entries if e.get("pair")})
         if not instruments:

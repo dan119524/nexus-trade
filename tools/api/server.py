@@ -454,7 +454,7 @@ def get_prices(instruments: str) -> list[dict]:
         api_key = os.getenv("OANDA_API_KEY")
         account_id = os.getenv("OANDA_ACCOUNT_ID")
         env = os.getenv("OANDA_ENV", "practice")
-        environment = "practice" if env == "practice" else "live"
+        environment = "live" if env == "live" else "practice"
         client = API(access_token=api_key, environment=environment)
         req = PricingInfo(accountID=account_id, params={"instruments": instruments})
         client.request(req)
