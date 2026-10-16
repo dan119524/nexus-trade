@@ -1,4 +1,4 @@
-"""Phase 02 demo. Run with: python -m tools.models.demo
+"""Phase 03 demo. Run with: python -m tools.models.demo
 
 Uses fixed example data only. It does not call the OANDA API.
 """
@@ -18,26 +18,35 @@ def main():
               f"market structure = {pair.market_structure()}")
 
     print("\n== TradeSetup ==")
-    buy = TradeSetup("EUR_USD", "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
-    sell = TradeSetup("GBP_USD", "sell", entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
+    buy = TradeSetup(eur_usd, "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+    sell = TradeSetup(gbp_usd, "sell", entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
     for setup in (buy, sell):
         print(f"{setup.pair_name} {setup.direction}: entry {setup.entry}, "
               f"stop loss {setup.stop_loss}, take profit {setup.take_profit}, "
               f"reward-to-risk = {setup.reward_to_risk():.2f}")
 
     print("\n== BacktestResult ==")
-    tested = BacktestResult("EUR_USD", date(2026, 10, 15), setups_tested=12, trade_count=10, win_count=6)
-    no_trades = BacktestResult("GBP_USD", date(2026, 10, 15), setups_tested=0, trade_count=0, win_count=0)
+    tested = BacktestResult(eur_usd, date(2026, 10, 15), setups_tested=12, trade_count=10, win_count=6)
+    no_trades = BacktestResult(gbp_usd, date(2026, 10, 15), setups_tested=0, trade_count=0, win_count=0)
     for result in (tested, no_trades):
         print(f"{result.pair_name} on {result.test_date}: {result.setups_tested} setups, "
               f"{result.trade_count} trades, {result.win_count} wins, "
               f"win rate = {result.win_rate()}")
 
-    print("\n== Invalid object ==")
+    print("\n== Connected objects ==")
+    print(f"buy setup and EUR_USD backtest share one CurrencyPair: {buy.pair is tested.pair is eur_usd}")
+    print(f"buy setup reads its pair's market structure: {buy.pair.market_structure()}")
+    print(f"backtest reads its pair's price data: {len(tested.pair.price_data)} price points")
+
+    print("\n== Invalid objects ==")
     try:
-        TradeSetup("EUR_USD", "buy", entry=1.0900, stop_loss=1.0950, take_profit=1.1000)
+        TradeSetup(eur_usd, "buy", entry=1.0900, stop_loss=1.0950, take_profit=1.1000)
     except ValueError as error:
         print(f"Rejected invalid buy setup: {error}")
+    try:
+        TradeSetup("EUR_USD", "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+    except ValueError as error:
+        print(f"Rejected pair name string: {error}")
 
 
 if __name__ == "__main__":

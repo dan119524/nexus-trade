@@ -1,6 +1,6 @@
 """TradeSetup: a suggested trade on one currency pair (Phase 01 entity)."""
 
-from tools.models.currency_pair import to_price, validate_pair_name
+from tools.models.currency_pair import CurrencyPair, to_price
 
 _DIRECTIONS = ("buy", "sell")
 
@@ -8,8 +8,10 @@ _DIRECTIONS = ("buy", "sell")
 class TradeSetup:
     """A buy or sell setup with an entry price, a stop loss, and a take profit."""
 
-    def __init__(self, pair_name, direction, entry, stop_loss, take_profit):
-        self._pair_name = validate_pair_name(pair_name)
+    def __init__(self, pair, direction, entry, stop_loss, take_profit):
+        if not isinstance(pair, CurrencyPair):
+            raise ValueError(f"pair must be a CurrencyPair, got {pair!r}")
+        self._pair = pair
         if direction not in _DIRECTIONS:
             raise ValueError(f"direction must be 'buy' or 'sell', got {direction!r}")
         entry = to_price(entry, "entry")
@@ -27,8 +29,12 @@ class TradeSetup:
         self._take_profit = take_profit
 
     @property
+    def pair(self):
+        return self._pair
+
+    @property
     def pair_name(self):
-        return self._pair_name
+        return self._pair.name
 
     @property
     def direction(self):

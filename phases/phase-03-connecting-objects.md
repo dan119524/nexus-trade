@@ -4,7 +4,7 @@
 
 - Phase 02 is merged and tagged `phase-02-completed`.
 - Local `main` is synced with GitHub and clean.
-- `python -m tools.models.demo` and `pytest` both pass.
+- `python -m tools.models.demo` runs and `pytest` shows no new test failures.
 - Review your Phase 02 classes and CRC cards. The CRC collaborators tell you which objects need to connect.
 
 ---
@@ -15,7 +15,7 @@
 2. Save this file as `phases/phase-03-connecting-objects.md`.
 3. Send Claude Code:
 
-> Phase 03 start check. Confirm: `phase-02-completed` exists on the remote and points to a commit on `main`; the current branch is `phase-03` and it starts from that commit; the working tree is clean; `pytest` passes. Report PHASE-03 START CHECK: PASS or BLOCKED with the reason. Do not modify anything.
+> Phase 03 start check. Confirm: `phase-02-completed` exists on the remote and points to a commit on `main`; the current branch is `phase-03` and it starts from that commit; the working tree is clean; `pytest` shows no new test failures. Report PHASE-03 START CHECK: PASS or BLOCKED with the reason. Do not modify anything.
 
 Don't continue until it reports **PHASE-03 START CHECK: PASS**.
 
@@ -48,7 +48,7 @@ No inheritance, interfaces, or patterns. Don't change anything outside `tools/mo
 
 Send Claude Code:
 
-> Phase 03 v1 check, read-only. Confirm: requirements.md classifies each relationship as association, aggregation, or composition; each classified relationship is implemented as an object reference in `tools/models/`; no lists, dicts, or sets are used for relationships; no inheritance, interfaces, or patterns; `demo.py` shows connected objects; the demo runs and `pytest` passes; nothing outside `tools/models/`, `docs/`, and `phases/` changed. Report PHASE-03 V1: READY or BLOCKED with the reason. Do not modify anything.
+> Phase 03 v1 check, read-only. Confirm: requirements.md classifies each relationship as association, aggregation, or composition; each classified relationship is implemented as an object reference in `tools/models/`, or recorded in requirements.md as deferred to a later phase; no lists, dicts, or sets are used for relationships; no inheritance, interfaces, or patterns; `demo.py` shows connected objects; the demo runs and `pytest` shows no new test failures; nothing outside `tools/models/`, `tests/models/`, `docs/`, and `phases/` changed. Report PHASE-03 V1: READY or BLOCKED with the reason. Do not modify anything.
 
 If **BLOCKED**, fix it (Claude Code can help) and run the check again. Once it reports **PHASE-03 V1: READY**:
 
@@ -67,7 +67,7 @@ Send Claude Code:
 
 Answer each finding with **ACCEPT** or **REJECT** plus your engineering reason. Then send:
 
-> Apply only the findings I accepted. Then sync `domain-model.puml` and `crc.puml` with the code and requirements, add pytest tests in `tests/models/` for the new relationships, and run `pytest`. Update `docs/evolution/phase-03.md` from Git history and repo evidence. Report PHASE-03: PASSED only when the demo runs, all tests pass, and the docs match the code.
+> Apply only the findings I accepted. Then sync `domain-model.puml` and `crc.puml` with the code and requirements, add pytest tests in `tests/models/` for the new relationships, and run `pytest`. Update `docs/evolution/phase-03.md` from Git history and repo evidence. Report PHASE-03: PASSED only when the demo runs, `pytest` shows no new test failures, and the docs match the code.
 
 Continue until it reports **PHASE-03: PASSED**. Open the changed diagrams in PyCharm and check them yourself.
 

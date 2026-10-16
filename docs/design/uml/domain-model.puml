@@ -68,7 +68,7 @@ note as SharedHelpers
   Shared helper functions (module-level, not classes)
   in tools/models/currency_pair.py:
   + validate_pair_name(name) : str
-      used by CurrencyPair, TradeSetup, BacktestResult
+      used by CurrencyPair
   + to_price(value, label) : float
       used by CurrencyPair, TradeSetup
 end note

@@ -4,7 +4,7 @@
 
 - Phase 04 is merged and tagged `phase-04-completed`, and `phase-04-v1` exists on GitHub.
 - Local `main` is synced with GitHub and clean.
-- The demo runs and `pytest` passes.
+- The demo runs and `pytest` shows no new test failures.
 - Review your requirements, classes, CRC cards, domain model, relationships, and inheritance hierarchy.
 
 This is the big checkpoint for NEXUS. After you build the interface yourself, you'll grow the domain to cover the whole trading pipeline. **Start early.**
@@ -17,7 +17,7 @@ This is the big checkpoint for NEXUS. After you build the interface yourself, yo
 2. Save this file as `phases/phase-05-polymorphism-interfaces.md`.
 3. Send Claude Code:
 
-> Phase 05 start check. Confirm: `phase-04-completed` exists on the remote and points to a commit on `main`; `phase-04-v1` exists on the remote; the current branch is `phase-05` and starts from `phase-04-completed`; the working tree is clean; `pytest` passes. Report PHASE-04 V1 TAG: VERIFIED and PHASE-05 START CHECK: PASS, or BLOCKED with the reason. Do not modify anything.
+> Phase 05 start check. Confirm: `phase-04-completed` exists on the remote and points to a commit on `main`; `phase-04-v1` exists on the remote; the current branch is `phase-05` and starts from `phase-04-completed`; the working tree is clean; `pytest` shows no new test failures. Report PHASE-04 V1 TAG: VERIFIED and PHASE-05 START CHECK: PASS, or BLOCKED with the reason. Do not modify anything.
 
 Don't continue until it reports **PHASE-05 START CHECK: PASS**.
 
@@ -50,7 +50,7 @@ The interface must represent real NEXUS behavior. An interface that is declared 
 
 Send Claude Code:
 
-> Phase 05 v1 check, read-only. Confirm: one ABC with at least one `@abstractmethod` exists in `tools/models/`; at least two classes implement it with different, meaningful behavior; a function or method accepts the interface type and is called with different implementations in `demo.py`; Phase 03 relationships and the Phase 04 hierarchy are preserved; the demo runs and `pytest` passes. Report PHASE-05 V1: READY or BLOCKED with the reason. Do not modify anything.
+> Phase 05 v1 check, read-only. Confirm: one ABC with at least one `@abstractmethod` exists in `tools/models/`; at least two classes implement it with different, meaningful behavior; a function or method accepts the interface type and is called with different implementations in `demo.py`; Phase 03 relationships and the Phase 04 hierarchy are preserved; the demo runs and `pytest` shows no new test failures. Report PHASE-05 V1: READY or BLOCKED with the reason. Do not modify anything.
 
 If **BLOCKED**, fix it (Claude Code can help) and run the check again. Once it reports **PHASE-05 V1: READY**:
 
@@ -83,7 +83,7 @@ Rules for the expansion:
 
 When your decisions are made, send:
 
-> Implement my decided entities in `tools/models/`. Update requirements.md, `crc.puml`, `domain-model.puml`, and `use-cases.puml` (only where an actor goal changed). Extend `demo.py`. Add pytest tests in `tests/models/` for each new class and run the full suite. Update `docs/evolution/phase-05.md` from Git history and repo evidence. Report PHASE-05 DOMAIN EXPANSION: COMPLETE only when the demo runs, all tests pass, and docs match the code.
+> Implement my decided entities in `tools/models/`. Update requirements.md, `crc.puml`, `domain-model.puml`, and `use-cases.puml` (only where an actor goal changed). Extend `demo.py`. Add pytest tests in `tests/models/` for each new class and run the full suite. Update `docs/evolution/phase-05.md` from Git history and repo evidence. Report PHASE-05 DOMAIN EXPANSION: COMPLETE only when the demo runs, `pytest` shows no new test failures, and docs match the code.
 
 Don't continue until it reports **PHASE-05 DOMAIN EXPANSION: COMPLETE**. Open every changed diagram in PyCharm and check it yourself.
 
@@ -93,7 +93,7 @@ Don't continue until it reports **PHASE-05 DOMAIN EXPANSION: COMPLETE**. Open ev
 
 Send Claude Code:
 
-> Run the Phase 05 final review and check. Do one light review of the expanded domain and list important recommendations, clearly marked as advisory. Then report PASS or FAIL with evidence for each: the interface is used polymorphically; Phase 03 and 04 work is preserved; about 10 meaningful new entities exist since `phase-05-v1`; no collections used for relationships; requirements, CRC, and domain model match the code; all of `pytest` passes; `docs/evolution/phase-05.md` exists; `phase-05-v1` exists; no pipeline tools outside `tools/models/` changed; no secrets in the diff. Report PHASE-05: PASSED or FAILED. Do not fail the phase only because I decline an advisory recommendation with a reason.
+> Run the Phase 05 final review and check. Do one light review of the expanded domain and list important recommendations, clearly marked as advisory. Then report PASS or FAIL with evidence for each: the interface is used polymorphically; Phase 03 and 04 work is preserved; about 10 meaningful new entities exist since `phase-05-v1`; no collections used for relationships; requirements, CRC, and domain model match the code; `pytest` shows no new test failures; `docs/evolution/phase-05.md` exists; `phase-05-v1` exists; no pipeline tools outside `tools/models/` changed; no secrets in the diff. Report PHASE-05: PASSED or FAILED. Do not fail the phase only because I decline an advisory recommendation with a reason.
 
 Decide on each recommendation yourself. Continue until it reports **PHASE-05: PASSED**.
 

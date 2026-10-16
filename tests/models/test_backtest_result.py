@@ -1,16 +1,18 @@
-"""Phase 02 tests for BacktestResult. Fixed counts only; no OANDA API calls."""
+"""Phase 02 and 03 tests for BacktestResult. Fixed counts only; no OANDA API calls."""
 
 from datetime import date
 
 import pytest
 
-from tools.models import BacktestResult
+from tools.models import BacktestResult, CurrencyPair, TradeSetup
 
 TEST_DATE = date(2026, 10, 15)
+EUR_USD = CurrencyPair("EUR_USD", [(1.0850, 1.0800), (1.0900, 1.0840)])
+GBP_USD = CurrencyPair("GBP_USD", [(1.2800, 1.2750), (1.2760, 1.2700)])
 
 
 def test_valid_construction_stores_values():
-    result = BacktestResult("EUR_USD", TEST_DATE, setups_tested=12, trade_count=10, win_count=6)
+    result = BacktestResult(EUR_USD, TEST_DATE, setups_tested=12, trade_count=10, win_count=6)
 
     assert result.pair_name == "EUR_USD"
     assert result.test_date == TEST_DATE
@@ -20,7 +22,7 @@ def test_valid_construction_stores_values():
 
 
 def test_all_zero_counts_are_allowed():
-    result = BacktestResult("GBP_USD", TEST_DATE, setups_tested=0, trade_count=0, win_count=0)
+    result = BacktestResult(GBP_USD, TEST_DATE, setups_tested=0, trade_count=0, win_count=0)
 
     assert result.setups_tested == 0
     assert result.trade_count == 0
@@ -28,21 +30,42 @@ def test_all_zero_counts_are_allowed():
 
 
 def test_equal_counts_are_allowed():
-    result = BacktestResult("EUR_USD", TEST_DATE, setups_tested=5, trade_count=5, win_count=5)
+    result = BacktestResult(EUR_USD, TEST_DATE, setups_tested=5, trade_count=5, win_count=5)
 
     assert result.win_rate() == 1.0
 
 
-@pytest.mark.parametrize("pair_name", ["EUR/USD", "eurusd", "EUR_EUR", None])
-def test_invalid_pair_name_raises_value_error(pair_name):
+def test_pair_is_the_currency_pair_object_passed_in():
+    result = BacktestResult(EUR_USD, TEST_DATE, setups_tested=12, trade_count=10, win_count=6)
+
+    assert result.pair is EUR_USD
+    assert result.pair_name == EUR_USD.name
+
+
+def test_result_and_setup_can_share_one_pair():
+    setup = TradeSetup(EUR_USD, "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+    result = BacktestResult(EUR_USD, TEST_DATE, setups_tested=12, trade_count=10, win_count=6)
+
+    assert result.pair is setup.pair
+
+
+def test_pair_is_read_only():
+    result = BacktestResult(EUR_USD, TEST_DATE, setups_tested=12, trade_count=10, win_count=6)
+
+    with pytest.raises(AttributeError):
+        result.pair = GBP_USD
+
+
+@pytest.mark.parametrize("pair", ["EUR_USD", None, 1, ("EUR_USD", [(1.09, 1.08), (1.10, 1.09)])])
+def test_pair_that_is_not_a_currency_pair_raises_value_error(pair):
     with pytest.raises(ValueError):
-        BacktestResult(pair_name, TEST_DATE, setups_tested=1, trade_count=1, win_count=0)
+        BacktestResult(pair, TEST_DATE, setups_tested=1, trade_count=1, win_count=0)
 
 
 @pytest.mark.parametrize("test_date", ["2026-10-15", None, 20261015])
 def test_test_date_that_is_not_a_date_raises_value_error(test_date):
     with pytest.raises(ValueError):
-        BacktestResult("EUR_USD", test_date, setups_tested=1, trade_count=1, win_count=0)
+        BacktestResult(EUR_USD, test_date, setups_tested=1, trade_count=1, win_count=0)
 
 
 @pytest.mark.parametrize("counts", [
@@ -52,7 +75,7 @@ def test_test_date_that_is_not_a_date_raises_value_error(test_date):
 ])
 def test_negative_count_raises_value_error(counts):
     with pytest.raises(ValueError):
-        BacktestResult("EUR_USD", TEST_DATE, **counts)
+        BacktestResult(EUR_USD, TEST_DATE, **counts)
 
 
 @pytest.mark.parametrize("counts", [
@@ -63,32 +86,32 @@ def test_negative_count_raises_value_error(counts):
 ])
 def test_count_that_is_not_a_whole_number_raises_value_error(counts):
     with pytest.raises(ValueError):
-        BacktestResult("EUR_USD", TEST_DATE, **counts)
+        BacktestResult(EUR_USD, TEST_DATE, **counts)
 
 
 def test_wins_greater_than_trades_raises_value_error():
     with pytest.raises(ValueError):
-        BacktestResult("EUR_USD", TEST_DATE, setups_tested=10, trade_count=3, win_count=4)
+        BacktestResult(EUR_USD, TEST_DATE, setups_tested=10, trade_count=3, win_count=4)
 
 
 def test_trades_greater_than_setups_tested_raises_value_error():
     with pytest.raises(ValueError):
-        BacktestResult("EUR_USD", TEST_DATE, setups_tested=0, trade_count=10, win_count=6)
+        BacktestResult(EUR_USD, TEST_DATE, setups_tested=0, trade_count=10, win_count=6)
 
 
 def test_win_rate_is_wins_divided_by_trades():
-    result = BacktestResult("EUR_USD", TEST_DATE, setups_tested=12, trade_count=10, win_count=6)
+    result = BacktestResult(EUR_USD, TEST_DATE, setups_tested=12, trade_count=10, win_count=6)
 
     assert result.win_rate() == pytest.approx(0.6)
 
 
 def test_win_rate_is_zero_when_no_trade_wins():
-    result = BacktestResult("EUR_USD", TEST_DATE, setups_tested=4, trade_count=4, win_count=0)
+    result = BacktestResult(EUR_USD, TEST_DATE, setups_tested=4, trade_count=4, win_count=0)
 
     assert result.win_rate() == 0.0
 
 
 def test_win_rate_is_none_for_zero_trades():
-    result = BacktestResult("GBP_USD", TEST_DATE, setups_tested=3, trade_count=0, win_count=0)
+    result = BacktestResult(GBP_USD, TEST_DATE, setups_tested=3, trade_count=0, win_count=0)
 
     assert result.win_rate() is None
