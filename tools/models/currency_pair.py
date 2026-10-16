@@ -1,5 +1,6 @@
 """CurrencyPair: a forex market that NEXUS analyzes (Phase 01 entity)."""
 
+import math
 import re
 
 _PAIR_NAME_PATTERN = re.compile(r"[A-Z]{3}_[A-Z]{3}")
@@ -15,23 +16,29 @@ def validate_pair_name(name):
     return name
 
 
-def _to_price(value, label):
-    """Return value as a float if it is a number. Otherwise raise ValueError."""
+def to_price(value, label):
+    """Return value as a float if it is a finite number. Otherwise raise ValueError."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"{label} must be a number, got {value!r}")
+    if not math.isfinite(value):
+        raise ValueError(f"{label} must be a finite number, got {value!r}")
     return float(value)
 
 
 def _validate_price_data(price_data):
     """Return price data as a tuple of (high, low) floats, or raise ValueError."""
-    if not price_data:
-        raise ValueError("price data must not be empty")
+    try:
+        price_data = tuple(price_data)
+    except TypeError:
+        raise ValueError(f"price data must be a sequence of (high, low) tuples, got {price_data!r}")
+    if len(price_data) < 2:
+        raise ValueError("price data must have at least 2 price points")
     points = []
     for point in price_data:
         if not isinstance(point, tuple) or len(point) != 2:
             raise ValueError(f"each price point must be a (high, low) tuple, got {point!r}")
-        high = _to_price(point[0], "high")
-        low = _to_price(point[1], "low")
+        high = to_price(point[0], "high")
+        low = to_price(point[1], "low")
         if high <= 0 or low <= 0:
             raise ValueError(f"prices must be greater than 0, got {point!r}")
         if high < low:
@@ -57,8 +64,6 @@ class CurrencyPair:
 
     def market_structure(self):
         """Return "uptrend", "downtrend", or "ranging" from this pair's price data (FR1)."""
-        if len(self._price_data) < 2:
-            raise ValueError("market structure needs at least 2 price points")
         steps = list(zip(self._price_data, self._price_data[1:]))
         if all(high > prev_high and low > prev_low
                for (prev_high, prev_low), (high, low) in steps):

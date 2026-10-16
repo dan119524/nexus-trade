@@ -1,15 +1,8 @@
 """TradeSetup: a suggested trade on one currency pair (Phase 01 entity)."""
 
-from tools.models.currency_pair import validate_pair_name
+from tools.models.currency_pair import to_price, validate_pair_name
 
 _DIRECTIONS = ("buy", "sell")
-
-
-def _to_price(value, label):
-    """Return value as a float if it is a number. Otherwise raise ValueError."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ValueError(f"{label} must be a number, got {value!r}")
-    return float(value)
 
 
 class TradeSetup:
@@ -19,9 +12,9 @@ class TradeSetup:
         self._pair_name = validate_pair_name(pair_name)
         if direction not in _DIRECTIONS:
             raise ValueError(f"direction must be 'buy' or 'sell', got {direction!r}")
-        entry = _to_price(entry, "entry")
-        stop_loss = _to_price(stop_loss, "stop loss")
-        take_profit = _to_price(take_profit, "take profit")
+        entry = to_price(entry, "entry")
+        stop_loss = to_price(stop_loss, "stop loss")
+        take_profit = to_price(take_profit, "take profit")
         if entry <= 0 or stop_loss <= 0 or take_profit <= 0:
             raise ValueError("entry, stop loss, and take profit must be greater than 0")
         if direction == "buy" and not stop_loss < entry < take_profit:

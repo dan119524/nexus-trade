@@ -27,6 +27,8 @@ class BacktestResult:
         self._win_count = _to_count(win_count, "win count")
         if self._win_count > self._trade_count:
             raise ValueError("win count must not be greater than trade count")
+        if self._trade_count > self._setups_tested:
+            raise ValueError("trade count must not be greater than setups tested")
 
     @property
     def pair_name(self):

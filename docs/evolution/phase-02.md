@@ -24,3 +24,10 @@ Daniel recorded two existing API tests as known failures from before Phase 01. T
 - The candles endpoint does not validate the pair or timeframe. When no cached file exists, it tries to fetch from OANDA and returns 502 when that fails. Both tests therefore cause a fetch attempt against the OANDA practice API.
 
 The code and the tests were left unchanged. The Phase 02 guide forbids changes to existing tools, and `AGENTS.md` forbids changing a test only because the code fails it.
+
+## Deferred Engineering Review Findings
+
+| Finding | Decision | Note |
+|---|---|---|
+| 4: `BacktestResult` stores a count of setups tested, not which setups were tested (CRC: "Know which trade setups were tested") | DEFER to Phase 03 | Holding `TradeSetup` objects is object collaboration, which starts in Phase 03. |
+| 7: The minimum reward-to-risk of 2 (FR2) is not enforced in Phase 02 | DEFER | When it is enforced, reward-to-risk is rounded to 2 decimals before comparing with 2. Example: the demo buy setup computes as `1.9999999999999556` and rounds to `2.00`. |
