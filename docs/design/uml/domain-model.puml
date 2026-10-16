@@ -58,6 +58,12 @@ BacktestResult "0..1" -- "0..*" TradeSetup : is based on >
 note "All trade setups in a backtest result must belong\nto the same currency pair as that backtest result." as SamePair
 SamePair .. BacktestResult
 
+note as AssociationLinks
+  The three associations above are linked by pair_name only;
+  object references and same-pair check in Phase 03.
+end note
+AssociationLinks .. CurrencyPair
+
 note as SharedHelpers
   Shared helper functions (module-level, not classes)
   in tools/models/currency_pair.py:
@@ -65,5 +71,18 @@ note as SharedHelpers
       used by CurrencyPair, TradeSetup, BacktestResult
   + to_price(value, label) : float
       used by CurrencyPair, TradeSetup
+end note
+
+note as ValidationRules
+  Validation rules (design decisions, not stated in requirements.md).
+  Each violation raises ValueError in __init__.
+  Pair name: OANDA format AAA_BBB, two different currencies.
+  CurrencyPair: at least 2 (high, low) tuple points;
+    prices finite numbers > 0; high >= low.
+  TradeSetup: direction "buy" or "sell"; prices finite numbers > 0;
+    buy: stop loss < entry < take profit (FR2);
+    sell: take profit < entry < stop loss (FR2).
+  BacktestResult: test_date is a date; counts are whole numbers >= 0;
+    win count <= trade count <= setups tested.
 end note
 @enduml

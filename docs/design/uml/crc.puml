@@ -26,6 +26,8 @@ class BacktestResult {
   Know which currency pair was tested
   Know which trade setups were tested
   Know its number of trades and its win rate
+  Know when the test was run
+  Know the number of wins
   .. Collaborators ..
   CurrencyPair
   TradeSetup

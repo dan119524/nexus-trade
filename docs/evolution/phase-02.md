@@ -109,15 +109,15 @@ Daniel's decisions and the resulting changes are below. The ACCEPT and MODIFY ch
 - **`use-cases.puml`:** unchanged, because no actor goal changed.
 - Claude Code could not run PlantUML's syntax check, because PlantUML is not installed in its environment.
 
-Claude Code reported five points where requirements and code disagree. It did not choose, and no decision is recorded yet:
+Claude Code reported five points where requirements and code disagree. It did not choose. Daniel decided each one:
 
-| # | Disagreement |
-|---|---|
-| D1 | The three associations are in the requirements and the diagram, but the code holds no object references, only `pair_name` strings. The same-pair rule is not enforced. |
-| D2 | "Know which trade setups were tested" is stored only as a count (deferred as finding 4). |
-| D3 | `BacktestResult` stores `test_date` and `win_count`, which no CRC card lists. FR4's "most recent" implies a date but does not state it. |
-| D4 | The validation rules, such as the name format, at least 2 points, finite positive prices, high ≥ low, and wins ≤ trades ≤ setups tested, are not stated in `requirements.md`. The buy and sell price order comes from FR2. |
-| D5 | FR2's minimum reward-to-risk of 2 is not enforced (deferred as finding 7). |
+| # | Disagreement | Decision | Change made |
+|---|---|---|---|
+| D1 | The three associations are in the requirements and the diagram, but the code holds no object references, only `pair_name` strings. The same-pair rule is not enforced. | DEFER to Phase 03 | `domain-model.puml` has a note on the associations: "linked by pair_name only; object references and same-pair check in Phase 03". |
+| D2 | "Know which trade setups were tested" is stored only as a count (deferred as finding 4). | Closed as a duplicate of finding 4 | None. |
+| D3 | `BacktestResult` stores `test_date` and `win_count`, which no CRC card lists. FR4's "most recent" implies a date but does not state it. | ACCEPT | The `BacktestResult` CRC card in `requirements.md` and `crc.puml` adds "Know when the test was run" and "Know the number of wins". FR4 is unchanged. |
+| D4 | The validation rules, such as the name format, at least 2 points, finite positive prices, high ≥ low, and wins ≤ trades ≤ setups tested, are not stated in `requirements.md`. The buy and sell price order comes from FR2. | ACCEPT | `domain-model.puml` has a "Validation rules" note listing them as design decisions. |
+| D5 | FR2's minimum reward-to-risk of 2 is not enforced (deferred as finding 7). | DEFER, same as finding 7 | None. |
 
 ## Tests
 
