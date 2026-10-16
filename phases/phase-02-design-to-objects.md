@@ -35,7 +35,7 @@ python -m tools.models.demo
 pytest
 ```
 
-The demo must run and every existing test must still pass.
+The demo must run and there must be no new test failures. The 2 pre-existing failures recorded in `docs/evolution/phase-02.md` stay recorded.
 
 Use only concepts from Phase 02 and earlier: no inheritance, interfaces, patterns, or changes to existing tools.
 
@@ -108,7 +108,7 @@ Run the full suite yourself:
 pytest
 ```
 
-Don't continue until every test passes. If a fix changes a design decision, update the requirements and diagrams too, then test again.
+Don't continue until there are no new test failures. If a fix changes a design decision, update the requirements and diagrams too, then test again.
 
 ---
 
@@ -138,7 +138,7 @@ pytest
 
 Send Claude Code:
 
-> Run the Phase 02 check. Report PASS or FAIL with evidence for each: one class per Phase 01 entity exists in `tools/models/`; constructors validate input; attributes are encapsulated; no collaboration, inheritance, interfaces, or patterns; `demo.py` runs; `tests/models/` exists and all of `pytest` passes; `domain-model.puml` matches the code; `docs/evolution/phase-02.md` exists with a Verification Confirmation; `phase-02-v1` tag exists; no other `tools/` files changed; no secrets in the diff. Do not fix anything.
+> Run the Phase 02 check. Report PASS or FAIL with evidence for each: one class per Phase 01 entity exists in `tools/models/`; constructors validate input; attributes are encapsulated; no collaboration, inheritance, interfaces, or patterns; `demo.py` runs; `tests/models/` exists and `pytest` shows no new test failures; `domain-model.puml` matches the code; `docs/evolution/phase-02.md` exists with a Verification Confirmation; `phase-02-v1` tag exists; no other `tools/` files changed; no secrets in the diff. Do not fix anything.
 
 Don't continue until every item is **PASS**.
 

@@ -4,7 +4,7 @@
 
 | Entity | Description |
 |---|---|
-| **CurrencyPair** | A forex market NEXUS analyzes, such as EUR/USD, together with its past price data and its current market structure. |
+| **CurrencyPair** | A forex market NEXUS analyzes, such as EUR_USD, together with its past price data and its current market structure. |
 | **TradeSetup** | A suggested trade on one currency pair, with a direction, an entry price, a stop loss, and a take profit. |
 | **BacktestResult** | The outcome of testing trade setups on one currency pair's past price data, showing how well they would have performed. |
 
@@ -21,7 +21,7 @@
 
 | ID | Requirement | Use case |
 |---|---|---|
-| FR1 | NEXUS shall identify the market structure of a selected currency pair as uptrend, downtrend, or ranging, using that pair's past price data. An uptrend means higher highs and higher lows. A downtrend means lower highs and lower lows. Anything else is ranging. | UC1 |
+| FR1 | NEXUS shall identify the market structure of a selected currency pair as uptrend, downtrend, or ranging, using that pair's past price data. An uptrend means every price point has a higher high and a higher low than the one before it. A downtrend means every price point has a lower high and a lower low than the one before it. Anything else, including any equal high or low, is ranging. | UC1 |
 | FR2 | NEXUS shall suggest trade setups for a currency pair, each with a direction (buy or sell), an entry price, a stop loss, and a take profit, and shall not suggest any setup with a reward-to-risk ratio below 2. For a buy, stop loss < entry < take profit. For a sell, take profit < entry < stop loss. | UC2 |
 | FR3 | NEXUS shall backtest trade setups for a currency pair on past price data and report the number of trades and the win rate. A win is a trade that hits its take profit before its stop loss. | UC3 |
 | FR4 | NEXUS shall rank currency pairs from best to worst by the win rate of each pair's most recent backtest result. Pairs with zero trades or no backtest result are ranked last. | UC4 |
@@ -35,7 +35,7 @@
 
 | Responsibilities | Collaborators |
 |---|---|
-| Know its name (for example, EUR/USD) | |
+| Know its name (for example, EUR_USD) | |
 | Know its past price data | |
 | Know its current market structure | |
 
@@ -54,6 +54,8 @@
 | Know which currency pair was tested | CurrencyPair |
 | Know which trade setups were tested | TradeSetup |
 | Know its number of trades and its win rate | |
+| Know when the test was run | |
+| Know the number of wins | |
 
 ## Relationships and Multiplicities
 
