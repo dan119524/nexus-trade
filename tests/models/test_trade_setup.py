@@ -156,3 +156,55 @@ def test_reward_to_risk_below_two_is_returned_not_rejected(usd_jpy):
     setup = BuySetup(usd_jpy, entry=150.0, stop_loss=148.0, take_profit=151.0)
 
     assert setup.reward_to_risk() == pytest.approx(0.5)
+
+
+# Behavior SellSetup inherits from TradeSetup (Phase 04 review finding 4).
+
+def test_sell_integer_prices_are_stored_as_floats(usd_jpy):
+    setup = SellSetup(usd_jpy, entry=150, stop_loss=151, take_profit=147)
+
+    assert isinstance(setup.entry, float)
+    assert isinstance(setup.stop_loss, float)
+    assert isinstance(setup.take_profit, float)
+
+
+def test_sell_pair_is_the_currency_pair_object_passed_in(gbp_usd):
+    setup = SellSetup(gbp_usd, entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
+
+    assert setup.pair is gbp_usd
+    assert setup.pair_name == gbp_usd.name
+
+
+def test_sell_setup_can_use_its_pair(gbp_usd):
+    setup = SellSetup(gbp_usd, entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
+
+    assert setup.pair.market_structure() == "downtrend"
+
+
+def test_sell_pair_is_read_only(eur_usd, gbp_usd):
+    setup = SellSetup(gbp_usd, entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
+
+    with pytest.raises(AttributeError):
+        setup.pair = eur_usd
+
+
+@pytest.mark.parametrize("pair", ["GBP_USD", None, 1, ("GBP_USD", [(1.28, 1.27), (1.27, 1.26)])])
+def test_sell_pair_that_is_not_a_currency_pair_raises_value_error(pair):
+    with pytest.raises(ValueError):
+        SellSetup(pair, entry=1.09, stop_loss=1.10, take_profit=1.07)
+
+
+@pytest.mark.parametrize("prices", [
+    {"entry": NAN, "stop_loss": 1.10, "take_profit": 1.07},
+    {"entry": 1.09, "stop_loss": NAN, "take_profit": 1.07},
+    {"entry": 1.09, "stop_loss": 1.10, "take_profit": NAN},
+    {"entry": 1.09, "stop_loss": INF, "take_profit": 1.07},
+    {"entry": 1.09, "stop_loss": 1.10, "take_profit": -INF},
+    {"entry": 1.09, "stop_loss": 0, "take_profit": 1.07},
+    {"entry": 1.09, "stop_loss": 1.10, "take_profit": -1.07},
+    {"entry": "1.09", "stop_loss": 1.10, "take_profit": 1.07},
+    {"entry": True, "stop_loss": 1.10, "take_profit": 1.07},
+])
+def test_sell_invalid_price_raises_value_error(prices, eur_usd):
+    with pytest.raises(ValueError):
+        SellSetup(eur_usd, **prices)
