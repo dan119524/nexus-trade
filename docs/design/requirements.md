@@ -5,7 +5,9 @@
 | Entity | Description |
 |---|---|
 | **CurrencyPair** | A forex market NEXUS analyzes, such as EUR_USD, together with its past price data and its current market structure. |
-| **TradeSetup** | A suggested trade on one currency pair, with a direction, an entry price, a stop loss, and a take profit. |
+| **TradeSetup** | A suggested trade on one currency pair, with a direction, an entry price, a stop loss, and a take profit. Its direction comes from BuySetup or SellSetup. |
+| **BuySetup** | A trade setup whose direction is buy. Its stop loss is below its entry, and its take profit is above it. |
+| **SellSetup** | A trade setup whose direction is sell. Its take profit is below its entry, and its stop loss is above it. |
 | **BacktestResult** | The outcome of testing trade setups on one currency pair's past price data, showing how well they would have performed. |
 
 ## Use Cases
@@ -44,8 +46,24 @@
 | Responsibilities | Collaborators |
 |---|---|
 | Know which currency pair it belongs to | CurrencyPair |
-| Know its direction, entry price, stop loss, and take profit | |
+| Know its direction, entry price, stop loss, and take profit (direction comes from BuySetup or SellSetup) | |
 | Know its reward-to-risk ratio | |
+
+### BuySetup
+
+| Responsibilities | Collaborators |
+|---|---|
+| Know that its direction is buy | |
+| Require stop loss < entry < take profit | |
+| Know its reward (take profit − entry) and its risk (entry − stop loss) | |
+
+### SellSetup
+
+| Responsibilities | Collaborators |
+|---|---|
+| Know that its direction is sell | |
+| Require take profit < entry < stop loss | |
+| Know its reward (entry − take profit) and its risk (stop loss − entry) | |
 
 ### BacktestResult
 
@@ -71,3 +89,15 @@
 - All trade setups in a backtest result must belong to the same currency pair as that backtest result.
 - The two CurrencyPair associations are one-way: each TradeSetup and each BacktestResult holds a reference to its CurrencyPair, and a CurrencyPair holds no references to its setups or results.
 - The BacktestResult–TradeSetup aggregation and the same-pair rule are implemented in Phase 06, when collections are introduced.
+
+## Inheritance
+
+| Subclass | Relationship | Superclass |
+|---|---|---|
+| BuySetup | is a | TradeSetup |
+| SellSetup | is a | TradeSetup |
+
+- BuySetup and SellSetup exist because FR2 gives every trade setup a direction, buy or sell, and the two directions need opposite price orders.
+- TradeSetup holds the state and behavior both directions share: the currency pair, the entry price, the stop loss, the take profit, price validation, and the reward-to-risk ratio (reward divided by risk).
+- Each subclass supplies what differs by direction: its direction, its price-order check, its reward, and its risk.
+- A bare TradeSetup cannot be created; only BuySetup and SellSetup can. TradeSetup becomes abstract in Phase 05.

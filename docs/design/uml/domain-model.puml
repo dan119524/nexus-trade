@@ -1,8 +1,10 @@
 @startuml domain-model
 ' Sources: docs/design/requirements.md, sections "Domain Entities" and
 ' "Relationships and Multiplicities", for the classes and relationships.
-' tools/models/ (Phase 03) for the attributes, public methods, and object references.
-' Attributes are private (-) and exposed as read-only @property (+). No setters.
+' tools/models/ (Phase 04) for the attributes, methods, object references, and inheritance.
+' Attributes are private (-), or protected (#) when a subclass reads them, and are
+' exposed as read-only @property (+). No setters. Subclasses list only the members
+' they define or override; inherited members are not repeated.
 skinparam classAttributeIconSize 0
 hide empty members
 
@@ -19,11 +21,11 @@ class CurrencyPair {
 
 class TradeSetup {
   - _pair : CurrencyPair
-  - _direction : str
-  - _entry : float
-  - _stop_loss : float
-  - _take_profit : float
-  + __init__(pair : CurrencyPair, direction : str, entry : float, stop_loss : float, take_profit : float)
+  # _entry : float
+  # _stop_loss : float
+  # _take_profit : float
+  + __init__(pair : CurrencyPair, entry : float, stop_loss : float, take_profit : float)
+  # _check_price_order()
   .. read-only properties ..
   + pair : CurrencyPair
   + pair_name : str
@@ -32,8 +34,39 @@ class TradeSetup {
   + stop_loss : float
   + take_profit : float
   .. methods ..
+  + reward() : float
+  + risk() : float
   + reward_to_risk() : float
 }
+
+note right of TradeSetup
+  Cannot be created directly: _check_price_order(),
+  direction, reward(), and risk() raise
+  NotImplementedError. Becomes abstract in Phase 05.
+end note
+
+class BuySetup {
+  + __init__(pair : CurrencyPair, entry : float, stop_loss : float, take_profit : float)
+  # _check_price_order()
+  .. read-only properties ..
+  + direction : str
+  .. methods ..
+  + reward() : float
+  + risk() : float
+}
+
+class SellSetup {
+  + __init__(pair : CurrencyPair, entry : float, stop_loss : float, take_profit : float)
+  # _check_price_order()
+  .. read-only properties ..
+  + direction : str
+  .. methods ..
+  + reward() : float
+  + risk() : float
+}
+
+TradeSetup <|-- BuySetup
+TradeSetup <|-- SellSetup
 
 class BacktestResult {
   - _pair : CurrencyPair
@@ -90,9 +123,9 @@ note as ValidationRules
   TradeSetup, BacktestResult: pair is a CurrencyPair.
   CurrencyPair: at least 2 (high, low) tuple points;
     prices finite numbers > 0; high >= low.
-  TradeSetup: direction "buy" or "sell"; prices finite numbers > 0;
-    buy: stop loss < entry < take profit (FR2);
-    sell: take profit < entry < stop loss (FR2).
+  TradeSetup: prices finite numbers > 0.
+  BuySetup: stop loss < entry < take profit (FR2).
+  SellSetup: take profit < entry < stop loss (FR2).
   BacktestResult: test_date is a date; counts are whole numbers >= 0;
     win count <= trade count <= setups tested.
 end note

@@ -1,11 +1,11 @@
-"""Phase 03 demo. Run with: python -m tools.models.demo
+"""Phase 04 demo. Run with: python -m tools.models.demo
 
 Uses fixed example data only. It does not call the OANDA API.
 """
 
 from datetime import date
 
-from tools.models import BacktestResult, CurrencyPair, TradeSetup
+from tools.models import BacktestResult, BuySetup, CurrencyPair, SellSetup, TradeSetup
 
 
 def main():
@@ -17,13 +17,18 @@ def main():
         print(f"{pair.name}: {len(pair.price_data)} price points, "
               f"market structure = {pair.market_structure()}")
 
-    print("\n== TradeSetup ==")
-    buy = TradeSetup(eur_usd, "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
-    sell = TradeSetup(gbp_usd, "sell", entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
+    print("\n== TradeSetup: BuySetup and SellSetup ==")
+    buy = BuySetup(eur_usd, entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+    sell = SellSetup(gbp_usd, entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
     for setup in (buy, sell):
-        print(f"{setup.pair_name} {setup.direction}: entry {setup.entry}, "
+        print(f"{type(setup).__name__} is a TradeSetup: {isinstance(setup, TradeSetup)}")
+        # Inherited from TradeSetup: pair_name, entry, stop_loss, take_profit, reward_to_risk()
+        print(f"  inherited:  {setup.pair_name}, entry {setup.entry}, "
               f"stop loss {setup.stop_loss}, take profit {setup.take_profit}, "
               f"reward-to-risk = {setup.reward_to_risk():.2f}")
+        # Overridden in each subclass: direction, reward(), risk()
+        print(f"  overridden: direction = {setup.direction}, "
+              f"reward = {setup.reward():.4f}, risk = {setup.risk():.4f}")
 
     print("\n== BacktestResult ==")
     tested = BacktestResult(eur_usd, date(2026, 10, 15), setups_tested=12, trade_count=10, win_count=6)
@@ -40,13 +45,21 @@ def main():
 
     print("\n== Invalid objects ==")
     try:
-        TradeSetup(eur_usd, "buy", entry=1.0900, stop_loss=1.0950, take_profit=1.1000)
+        BuySetup(eur_usd, entry=1.0900, stop_loss=1.0950, take_profit=1.1000)
     except ValueError as error:
         print(f"Rejected invalid buy setup: {error}")
     try:
-        TradeSetup("EUR_USD", "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+        SellSetup(gbp_usd, entry=1.2700, stop_loss=1.2650, take_profit=1.2550)
+    except ValueError as error:
+        print(f"Rejected invalid sell setup: {error}")
+    try:
+        BuySetup("EUR_USD", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
     except ValueError as error:
         print(f"Rejected pair name string: {error}")
+    try:
+        TradeSetup(eur_usd, entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+    except NotImplementedError as error:
+        print(f"Rejected bare TradeSetup: {error}")
 
 
 if __name__ == "__main__":

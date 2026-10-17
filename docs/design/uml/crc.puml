@@ -16,9 +16,26 @@ class TradeSetup {
   .. Responsibilities ..
   Know which currency pair it belongs to
   Know its direction, entry price, stop loss, and take profit
+  (direction comes from BuySetup or SellSetup)
   Know its reward-to-risk ratio
   .. Collaborators ..
   CurrencyPair
+}
+
+class BuySetup {
+  .. Responsibilities ..
+  Know that its direction is buy
+  Require stop loss < entry < take profit
+  Know its reward (take profit − entry) and its risk (entry − stop loss)
+  .. Collaborators ..
+}
+
+class SellSetup {
+  .. Responsibilities ..
+  Know that its direction is sell
+  Require take profit < entry < stop loss
+  Know its reward (entry − take profit) and its risk (stop loss − entry)
+  .. Collaborators ..
 }
 
 class BacktestResult {

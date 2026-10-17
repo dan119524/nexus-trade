@@ -133,7 +133,7 @@ NEXUS Trade/
 | 01 | Requirements and Domain Modeling | User stories and domain model in `docs/` | ✅ |
 | 02 | From Design to Objects | Phase 01 entities as Python classes in `tools/models/` | ✅ |
 | 03 | Connecting Objects | Object references between domain classes (no collections yet) | ✅ |
-| 04 | Inheritance | One superclass with at least two subclasses | ⬜ |
+| 04 | Inheritance | One superclass with at least two subclasses | ✅ |
 | 05 | Polymorphism and Interfaces | One interface (ABC) used polymorphically, plus domain expansion | ⬜ |
 | 06 | Growing the Object Model | Typed collections, composition over inheritance, full domain review | ⬜ |
 | 07 | Evaluating OO Design | Design review notes in `docs/design/` | ⬜ |

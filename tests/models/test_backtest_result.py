@@ -1,10 +1,10 @@
-"""Phase 02 and 03 tests for BacktestResult. Fixed counts only; no OANDA API calls."""
+"""Phase 02-04 tests for BacktestResult. Fixed counts only; no OANDA API calls."""
 
 from datetime import date
 
 import pytest
 
-from tools.models import BacktestResult, TradeSetup
+from tools.models import BacktestResult, BuySetup
 
 TEST_DATE = date(2026, 10, 15)
 
@@ -41,7 +41,7 @@ def test_pair_is_the_currency_pair_object_passed_in(eur_usd):
 
 
 def test_result_and_setup_can_share_one_pair(eur_usd):
-    setup = TradeSetup(eur_usd, "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+    setup = BuySetup(eur_usd, entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
     result = BacktestResult(eur_usd, TEST_DATE, setups_tested=12, trade_count=10, win_count=6)
 
     assert result.pair is setup.pair
