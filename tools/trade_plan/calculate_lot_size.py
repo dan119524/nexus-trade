@@ -11,8 +11,10 @@ Pip value per standard lot (100,000 units) in USD:
   - Base currency USD  (USD/JPY, USD/CHF, USD/CAD):  10 / current_price per pip
   - Cross pair         (EUR/GBP, GBP/JPY, EUR/JPY):  approximate via quote pip value
 
-Lot size is capped at 100 and rounded to 2 decimal places.
+Lot size is capped at 100 and rounded down to 2 decimal places.
 """
+
+import math
 
 from tools.utils.logger import get_logger
 
@@ -87,7 +89,9 @@ def calculate_lot_size(
     pip_val = pip_value_per_lot(pair, entry_price)
     raw_lots = risk_amount / (sl_pips * pip_val)
 
-    lot_size = max(_MIN_LOT, min(_MAX_LOT, round(raw_lots, 2)))
+    # Round down to 0.01 so the lot's risk never exceeds risk_amount; the tiny tolerance keeps
+    # products like 0.29 * 100 = 28.999999999999996 from dropping a whole step.
+    lot_size = max(_MIN_LOT, min(_MAX_LOT, math.floor(raw_lots * 100 + 1e-9) / 100))
 
     result = {
         "lot_size": lot_size,

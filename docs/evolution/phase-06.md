@@ -165,13 +165,24 @@ Results: `tests/models/` gives 452 passed. The full suite gives 541 passed and 2
 
 - As first built, `TradePlan` compared its raw risk with the account maximum, so floating point could reject an exactly-at-limit plan: 0.15 lots × 50 pips × 6.6667 = 50.00025 for USD_JPY. See "Risk Rounded to Cents" below.
 - `tools/scheduler/weekly_cycle.py` ranks pairs differently from FR4 (recorded in Known Conflicts). The tool was not changed.
-- `tools/trade_plan/calculate_lot_size.py` can round a lot size up past the account maximum (recorded in Known Conflicts). The tool was not changed.
+- `tools/trade_plan/calculate_lot_size.py` could round a lot size up past the account maximum. The tool was not changed during Phase 06; it was fixed afterwards (see "Fix After Phase 06").
+
+## Fix After Phase 06: Lot Size Rounds Down
+
+| Item | Detail |
+|---|---|
+| Where | `tools/trade_plan/calculate_lot_size.py`, `calculate_lot_size` |
+| Bug | `round(raw_lots, 2)` rounded to the nearest 0.01, so a lot could round up past the risk limit. For example, 0.996 lots became 1.00. `TradePlan` (R1) would reject such a plan. |
+| Fix | Made after Phase 06 on branch `fix/lot-round-down`, merged into `main` through a pull request. The lot size is `math.floor(raw_lots * 100 + 1e-9) / 100`, which always rounds down. The tiny tolerance keeps exact values such as 0.29 (0.29 × 100 = 28.999999999999996) from dropping a step. The 0.01 minimum and 100 maximum caps are unchanged. |
+| Tests | `tests/test_calculate_lot_size.py`: 0.996 becomes 0.99; 0.07, 0.29, 0.57, and 0.58 stay exact; and the rounded lot's risk never exceeds the limit across 360 combinations of pair (EUR_USD, USD_JPY, USD_CAD), balance, risk percent, and stop-loss pips. With the old rounding, 187 of the new tests fail. |
+| Still possible | When the 0.01 minimum cap applies (the limit is below one minimum lot's risk), the tool can still exceed the limit. The cap was kept as instructed. `TradePlan` rejects such a plan. |
+| Records | The Known Conflicts row in `requirements.md` became a resolution note. |
 
 ## Notes for Later Phases
 
 | Phase | Note |
 |---|---|
-| After 06 | `calculate_lot_size` should round the lot size down, so it never produces a plan that `TradePlan` rejects (R1). Separate fix. |
+| After 06 | Fixed: `calculate_lot_size` rounds the lot size down (see "Fix After Phase 06"). |
 | 10 | Move the shared helpers out of `candle.py` (Phase 05 A4). Revisit the `signal.py` module name if the layout changes (Phase 05 A6). The two in-method imports (`Account` → `Trade`, `CurrencyPair` → `BacktestResult`) exist only to avoid circular imports and may change with the module layout. |
 | Still open | Phase 02 finding 11 (price points must be tuples) and finding 14 (same-day backtests). Finding 14 is now handled for FR4 by "most recent = added last". |
 
