@@ -2,7 +2,7 @@
 
 import pytest
 
-from tools.models import BuySetup, SellSetup, TradeSetup
+from tools.models import BuySetup, CurrencyPair, SellSetup, TradeSetup, evaluate_setup
 
 NAN = float("nan")
 INF = float("inf")
@@ -63,7 +63,7 @@ def test_pair_that_is_not_a_currency_pair_raises_value_error(pair):
 
 
 def test_bare_trade_setup_cannot_be_created(eur_usd):
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(TypeError):
         TradeSetup(eur_usd, entry=1.09, stop_loss=1.08, take_profit=1.11)
 
 
@@ -208,3 +208,44 @@ def test_sell_pair_that_is_not_a_currency_pair_raises_value_error(pair):
 def test_sell_invalid_price_raises_value_error(prices, eur_usd):
     with pytest.raises(ValueError):
         SellSetup(eur_usd, **prices)
+
+
+# outcome() (FR3): price data is read from the first point. Buy: entry 1.10, stop loss 1.09,
+# take profit 1.12. Sell: entry 1.10, stop loss 1.11, take profit 1.08.
+
+BUY_PRICES = {"entry": 1.10, "stop_loss": 1.09, "take_profit": 1.12}
+SELL_PRICES = {"entry": 1.10, "stop_loss": 1.11, "take_profit": 1.08}
+
+
+@pytest.mark.parametrize("price_data, expected", [
+    ([(1.105, 1.095), (1.120, 1.100), (1.100, 1.085)], "win"),   # reaches take profit, later stop loss ignored
+    ([(1.105, 1.095), (1.110, 1.090), (1.125, 1.100)], "loss"),  # reaches stop loss, later take profit ignored
+    ([(1.105, 1.095), (1.115, 1.092)], "open"),                  # neither reached
+    ([(1.105, 1.095), (1.125, 1.085)], "loss"),                  # one point touches both
+], ids=["win", "loss", "open", "same-point"])
+def test_buy_outcome(price_data, expected):
+    setup = BuySetup(CurrencyPair("EUR_USD", price_data), **BUY_PRICES)
+    assert setup.outcome() == expected
+
+
+@pytest.mark.parametrize("price_data, expected", [
+    ([(1.105, 1.095), (1.100, 1.080), (1.115, 1.100)], "win"),   # reaches take profit, later stop loss ignored
+    ([(1.105, 1.095), (1.110, 1.090), (1.100, 1.075)], "loss"),  # reaches stop loss, later take profit ignored
+    ([(1.105, 1.095), (1.108, 1.085)], "open"),                  # neither reached
+    ([(1.105, 1.095), (1.115, 1.075)], "loss"),                  # one point touches both
+], ids=["win", "loss", "open", "same-point"])
+def test_sell_outcome(price_data, expected):
+    setup = SellSetup(CurrencyPair("EUR_USD", price_data), **SELL_PRICES)
+    assert setup.outcome() == expected
+
+
+def test_same_price_data_gives_opposite_outcomes_for_buy_and_sell():
+    pair = CurrencyPair("EUR_USD", [(1.105, 1.095), (1.120, 1.100)])
+    assert BuySetup(pair, **BUY_PRICES).outcome() == "win"
+    assert SellSetup(pair, **SELL_PRICES).outcome() == "loss"
+
+
+def test_evaluate_setup_works_with_any_trade_setup():
+    pair = CurrencyPair("EUR_USD", [(1.105, 1.095), (1.120, 1.100)])
+    assert evaluate_setup(BuySetup(pair, **BUY_PRICES)) == "win"
+    assert evaluate_setup(SellSetup(pair, **SELL_PRICES)) == "loss"

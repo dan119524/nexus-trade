@@ -1,11 +1,11 @@
-"""Phase 04 demo. Run with: python -m tools.models.demo
+"""Phase 05 demo. Run with: python -m tools.models.demo
 
 Uses fixed example data only. It does not call the OANDA API.
 """
 
 from datetime import date
 
-from tools.models import BacktestResult, BuySetup, CurrencyPair, SellSetup, TradeSetup
+from tools.models import BacktestResult, BuySetup, CurrencyPair, SellSetup, TradeSetup, evaluate_setup
 
 
 def main():
@@ -29,6 +29,15 @@ def main():
         # Overridden in each subclass: direction, reward(), risk()
         print(f"  overridden: direction = {setup.direction}, "
               f"reward = {setup.reward():.4f}, risk = {setup.risk():.4f}")
+
+    print("\n== Interface: evaluate_setup(setup: TradeSetup) ==")
+    buy_win = BuySetup(eur_usd, entry=1.0830, stop_loss=1.0750, take_profit=1.0940)
+    sell_open = SellSetup(gbp_usd, entry=1.2700, stop_loss=1.2900, take_profit=1.2500)
+    for setup in (buy, sell, buy_win, sell_open):
+        # Same function for every setup; each subclass supplies its own outcome() (FR3)
+        print(f"{type(setup).__name__} {setup.pair_name} entry {setup.entry}, "
+              f"stop loss {setup.stop_loss}, take profit {setup.take_profit}: "
+              f"outcome = {evaluate_setup(setup)}")
 
     print("\n== BacktestResult ==")
     tested = BacktestResult(eur_usd, date(2026, 10, 15), setups_tested=12, trade_count=10, win_count=6)
@@ -58,7 +67,7 @@ def main():
         print(f"Rejected pair name string: {error}")
     try:
         TradeSetup(eur_usd, entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
-    except NotImplementedError as error:
+    except TypeError as error:
         print(f"Rejected bare TradeSetup: {error}")
 
 

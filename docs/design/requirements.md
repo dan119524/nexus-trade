@@ -100,4 +100,15 @@
 - BuySetup and SellSetup exist because FR2 gives every trade setup a direction, buy or sell, and the two directions need opposite price orders.
 - TradeSetup holds the state and behavior both directions share: the currency pair, the entry price, the stop loss, the take profit, price validation, and the reward-to-risk ratio (reward divided by risk).
 - Each subclass supplies what differs by direction: its direction, its price-order check, its reward, and its risk.
-- A bare TradeSetup cannot be created; only BuySetup and SellSetup can. TradeSetup becomes abstract in Phase 05.
+- TradeSetup is an abstract base class, so a bare TradeSetup cannot be created; only BuySetup and SellSetup can. Its price-order check, direction, reward, risk, and outcome are abstract methods that each subclass implements.
+
+## Interfaces
+
+| Interface | Abstract method | Implemented by | Used through the interface by | Requirement |
+|---|---|---|---|---|
+| TradeSetup | outcome() | BuySetup, SellSetup | evaluate_setup(setup: TradeSetup) | FR3 |
+
+- outcome() returns "win", "loss", or "open" by reading the setup's currency pair price data from the first price point.
+- A buy wins when a high reaches its take profit and loses when a low reaches its stop loss. A sell is the mirror: it wins when a low reaches its take profit and loses when a high reaches its stop loss.
+- If one price point touches both the take profit and the stop loss, the outcome is a loss. If neither is reached, the outcome is "open".
+- evaluate_setup accepts any TradeSetup and returns its outcome, without knowing whether it is a BuySetup or a SellSetup.

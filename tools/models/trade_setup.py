@@ -1,13 +1,14 @@
-"""TradeSetup: a suggested trade on one currency pair (Phase 01 entity, Phase 04 superclass)."""
+"""TradeSetup: a suggested trade on one currency pair (Phase 01 entity, Phase 05 abstract base class)."""
+
+from abc import ABC, abstractmethod
 
 from tools.models.currency_pair import to_price, validate_pair
 
 
-class TradeSetup:
+class TradeSetup(ABC):
     """A setup with an entry price, a stop loss, and a take profit.
 
-    Only BuySetup and SellSetup can be built. A bare TradeSetup raises
-    NotImplementedError from its price-order check.
+    TradeSetup is abstract. Only BuySetup and SellSetup can be built.
     """
 
     def __init__(self, pair, entry, stop_loss, take_profit):
@@ -22,9 +23,9 @@ class TradeSetup:
         self._take_profit = take_profit
         self._check_price_order()
 
+    @abstractmethod
     def _check_price_order(self):
         """Raise ValueError if the prices are in the wrong order for this direction (FR2)."""
-        raise NotImplementedError("TradeSetup cannot be created directly; use BuySetup or SellSetup")
 
     @property
     def pair(self):
@@ -35,8 +36,9 @@ class TradeSetup:
         return self._pair.name
 
     @property
+    @abstractmethod
     def direction(self):
-        raise NotImplementedError("TradeSetup has no direction; use BuySetup or SellSetup")
+        """Return "buy" or "sell"."""
 
     @property
     def entry(self):
@@ -50,14 +52,27 @@ class TradeSetup:
     def take_profit(self):
         return self._take_profit
 
+    @abstractmethod
     def reward(self):
         """Return the price distance from entry to take profit."""
-        raise NotImplementedError("TradeSetup has no reward; use BuySetup or SellSetup")
 
+    @abstractmethod
     def risk(self):
         """Return the price distance from entry to stop loss."""
-        raise NotImplementedError("TradeSetup has no risk; use BuySetup or SellSetup")
 
     def reward_to_risk(self):
         """Return reward divided by risk. The minimum of 2 is not enforced here."""
         return self.reward() / self.risk()
+
+    @abstractmethod
+    def outcome(self):
+        """Return "win", "loss", or "open" from this pair's price data, starting at the first point (FR3).
+
+        A win reaches take profit before stop loss. A point that touches both is a loss.
+        If neither is reached, the outcome is "open".
+        """
+
+
+def evaluate_setup(setup: TradeSetup) -> str:
+    """Return the outcome of any TradeSetup, through the TradeSetup interface (FR3)."""
+    return setup.outcome()
