@@ -121,7 +121,7 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 | FR4 ranks pairs by win rate. `_rank_and_select_pairs` scores pairs by 40% win rate, 40% total R, and 20% profit factor, skips pairs with fewer than 3 trades, and keeps the top 8. | `requirements.md` FR4, `tools/scheduler/weekly_cycle.py` | FR4 is implemented as written in `tools/models/`. The tool is not changed. |
 
 - The Phase 05 conflict between FR1 and `detect_trend.py` was resolved in Phase 06 by FR12: FR1 is a currency pair's market structure, and a timeframe's trend comes from its swing labels.
-- The conflict between `calculate_lot_size` rounding the lot size to the nearest 0.01 (which could round up past the account's maximum risk) and FR9 was resolved after Phase 06: the tool now rounds the lot size down to 0.01. Its 0.01 minimum lot is kept, so a risk limit below one minimum lot's risk can still be exceeded by the tool.
+- The conflict between `calculate_lot_size` rounding the lot size to the nearest 0.01 (which could round up past the account's maximum risk) and FR9 was resolved after Phase 06: the tool now rounds the lot size down to 0.01, and when even the 0.01 minimum lot would risk more than the limit it returns no trade instead of forcing 0.01.
 
 ## Model Rules
 

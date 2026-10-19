@@ -145,6 +145,9 @@ def build_trade_plan(
         pair=pair,
         entry_price=entry,
     )
+    if sizing is None:
+        log.warning(f"Setup rejected: even the minimum lot exceeds the risk limit for {pair}.")
+        return None
 
     # ── Build invalidation note ────────────────────────────────────────────────
     if direction == "bearish":

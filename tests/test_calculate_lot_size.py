@@ -39,9 +39,9 @@ def test_lot_size_scales_with_risk_percent():
 
 def test_lot_size_minimum_cap():
     from tools.trade_plan.calculate_lot_size import calculate_lot_size
-    # Very small account / very wide SL → should floor at 0.01
+    # Very small account / very wide SL: 0.01 lots would risk $50 against a $0.10 limit → no trade
     result = calculate_lot_size(100, 0.1, 500, "EUR_USD", 1.085)
-    assert result["lot_size"] == 0.01
+    assert result is None
 
 
 def test_lot_size_maximum_cap():
@@ -211,7 +211,71 @@ def test_exact_lot_size_is_not_dropped_a_step_by_float_error(balance, lots):
 def test_rounded_lot_risk_never_exceeds_the_limit(pair, price, balance, risk_percent, sl_pips):
     from tools.trade_plan.calculate_lot_size import calculate_lot_size
     result = calculate_lot_size(balance, risk_percent, sl_pips, pair, price)
-    if result["risk_amount_usd"] / (sl_pips * result["pip_value_per_lot"]) < 0.01:
-        pytest.skip("the 0.01 minimum lot applies")
+    if result is None:
+        pytest.skip("no trade: the 0.01 minimum lot exceeds the limit")
     risk = result["lot_size"] * sl_pips * result["pip_value_per_lot"]
     assert risk <= result["risk_amount_usd"] + 1e-9
+
+
+# ── No trade when the minimum lot exceeds the risk limit (fix after Phase 06) ──
+
+def test_no_trade_when_minimum_lot_exceeds_the_limit():
+    from tools.trade_plan.calculate_lot_size import calculate_lot_size
+    # $50 × 1% = $0.50 limit; 0.01 lots × 20 pips × $10 = $2.00 → no trade
+    assert calculate_lot_size(50, 1.0, 20, "EUR_USD", 1.085) is None
+
+
+def test_minimum_lot_exactly_at_the_limit_is_a_trade():
+    from tools.trade_plan.calculate_lot_size import calculate_lot_size
+    # $200 × 1% = $2.00 limit; 0.01 lots × 20 pips × $10 = $2.00 → 0.01 lots
+    assert calculate_lot_size(200, 1.0, 20, "EUR_USD", 1.085)["lot_size"] == 0.01
+
+
+def test_normal_account_is_unchanged():
+    from tools.trade_plan.calculate_lot_size import calculate_lot_size
+    result = calculate_lot_size(5000, 1.0, 25, "EUR_USD", 1.085)
+    assert result["lot_size"] == 0.20
+    assert result["risk_amount_usd"] == 50.0
+
+
+def _plan_files(tmp_path, monkeypatch, balance):
+    """Point build_trade_plan at fixed signal, analysis, and candle files and a fake account."""
+    import tools.trade_plan.build_trade_plan as btp
+    import tools.utils.file_io as file_io
+    signal_path, analysis_path, candle_path = (str(tmp_path / n) for n in ("signal.json", "analysis.json", "candles.json"))
+    signal = {"pair": "EUR_USD", "status": "pending_trade_plan", "trade_plan": None,
+              "confluence": {"signal_valid": True, "direction": "bullish", "score": 3,
+                             "votes": {"M1": "bullish", "M5": "bullish", "H1": "bullish", "H4": "neutral"}}}
+    analysis = {"timeframes": {"H1": {"swing_highs": [{"price": 1.0950}], "swing_lows": [{"price": 1.0800}]}}}
+    candles = [{"time": "2025-01-15T14:00:00Z", "open": 1.0890, "high": 1.0905, "low": 1.0885, "close": 1.0900}]
+    for path, data in ((signal_path, signal), (analysis_path, analysis), (candle_path, candles)):
+        file_io.write_json(path, data)
+    monkeypatch.setattr(btp, "get_signal_path", lambda pair: signal_path)
+    monkeypatch.setattr(btp, "get_analysis_path", lambda pair: analysis_path)
+    monkeypatch.setattr(file_io, "get_candle_path", lambda pair, tf: candle_path)
+    monkeypatch.setattr(btp, "fetch_account", lambda: {"balance": balance})
+    monkeypatch.setenv("MIN_RISK_REWARD", "2.0")
+    return btp, signal_path
+
+
+def test_build_trade_plan_writes_no_plan_when_minimum_lot_exceeds_the_limit(tmp_path, monkeypatch):
+    from tools.utils.file_io import read_json
+    # entry 1.0900, SL 1.0798 (102 pips); $50 × 1% = $0.50 limit; 0.01 lots risk $10.20
+    btp, signal_path = _plan_files(tmp_path, monkeypatch, balance=50)
+    before = read_json(signal_path)
+
+    assert btp.build_trade_plan("EUR_USD", risk_percent=1.0) is None
+    assert read_json(signal_path) == before
+
+
+def test_build_trade_plan_still_writes_a_plan_for_a_normal_account(tmp_path, monkeypatch):
+    from tools.utils.file_io import read_json
+    # $10,000 × 1% = $100 limit; 102 pips × $10 → 0.098 lots, rounded down to 0.09
+    btp, signal_path = _plan_files(tmp_path, monkeypatch, balance=10_000)
+
+    result = btp.build_trade_plan("EUR_USD", risk_percent=1.0)
+
+    assert result is not None
+    saved = read_json(signal_path)
+    assert saved["status"] == "active"
+    assert saved["trade_plan"]["lot_size"] == 0.09

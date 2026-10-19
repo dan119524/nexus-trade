@@ -11,7 +11,8 @@ Pip value per standard lot (100,000 units) in USD:
   - Base currency USD  (USD/JPY, USD/CHF, USD/CAD):  10 / current_price per pip
   - Cross pair         (EUR/GBP, GBP/JPY, EUR/JPY):  approximate via quote pip value
 
-Lot size is capped at 100 and rounded down to 2 decimal places.
+Lot size is capped at 100 and rounded down to 2 decimal places. If even the 0.01 minimum lot
+would risk more than the risk limit, there is no trade: a warning is logged and None is returned.
 """
 
 import math
@@ -64,7 +65,7 @@ def calculate_lot_size(
     sl_pips: float,
     pair: str,
     entry_price: float,
-) -> dict:
+) -> dict | None:
     """
     Calculate the lot size for a trade.
 
@@ -76,7 +77,8 @@ def calculate_lot_size(
         entry_price:     Current price (used for pip value on USD-base pairs).
 
     Returns:
-        Dict with lot_size, risk_amount, pip_val, and derived fields.
+        Dict with lot_size, risk_amount, pip_val, and derived fields, or None when even the
+        0.01 minimum lot would risk more than risk_amount (no trade).
     """
     if sl_pips <= 0:
         raise ValueError(f"sl_pips must be positive, got {sl_pips}")
@@ -91,7 +93,15 @@ def calculate_lot_size(
 
     # Round down to 0.01 so the lot's risk never exceeds risk_amount; the tiny tolerance keeps
     # products like 0.29 * 100 = 28.999999999999996 from dropping a whole step.
-    lot_size = max(_MIN_LOT, min(_MAX_LOT, math.floor(raw_lots * 100 + 1e-9) / 100))
+    rounded_lots = math.floor(raw_lots * 100 + 1e-9) / 100
+    if rounded_lots < _MIN_LOT:
+        log.warning(
+            f"No trade: the {_MIN_LOT} minimum lot would risk "
+            f"${_MIN_LOT * sl_pips * pip_val:.2f}, more than the ${risk_amount:.2f} limit "
+            f"({pair}, SL={sl_pips}pips)."
+        )
+        return None
+    lot_size = max(_MIN_LOT, min(_MAX_LOT, rounded_lots))
 
     result = {
         "lot_size": lot_size,
