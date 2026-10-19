@@ -186,3 +186,32 @@ def test_rr_gate_rejects_low_rr(tmp_path, monkeypatch):
     # the gate is unit-tested via the sl_tp rr field in other tests.
     result = build_trade_plan("FAKE_PAIR")
     assert result is None  # no signal file → returns None
+
+
+# ── Lot size rounds down (fix after Phase 06) ─────────────────────────────────
+
+def test_lot_size_rounds_down_not_to_nearest():
+    from tools.trade_plan.calculate_lot_size import calculate_lot_size
+    # $4,980 × 1% = $49.80; 5 pips × $10 → 0.996 lots, which used to round up to 1.00
+    result = calculate_lot_size(4980, 1.0, 5, "EUR_USD", 1.085)
+    assert result["lot_size"] == 0.99
+
+
+@pytest.mark.parametrize("balance, lots", [(700, 0.07), (2900, 0.29), (5700, 0.57), (5800, 0.58)])
+def test_exact_lot_size_is_not_dropped_a_step_by_float_error(balance, lots):
+    from tools.trade_plan.calculate_lot_size import calculate_lot_size
+    # 1% of balance over 10 pips × $10 gives exactly `lots`; e.g. 0.29 × 100 = 28.999999999999996
+    assert calculate_lot_size(balance, 1.0, 10, "EUR_USD", 1.085)["lot_size"] == lots
+
+
+@pytest.mark.parametrize("pair, price", [("EUR_USD", 1.085), ("USD_JPY", 150.0), ("USD_CAD", 1.36)])
+@pytest.mark.parametrize("balance", [1000, 2537, 4980, 5000, 9999, 12345])
+@pytest.mark.parametrize("risk_percent", [0.5, 1.0, 1.5, 2.0])
+@pytest.mark.parametrize("sl_pips", [5, 7.5, 12.3, 25, 50])
+def test_rounded_lot_risk_never_exceeds_the_limit(pair, price, balance, risk_percent, sl_pips):
+    from tools.trade_plan.calculate_lot_size import calculate_lot_size
+    result = calculate_lot_size(balance, risk_percent, sl_pips, pair, price)
+    if result["risk_amount_usd"] / (sl_pips * result["pip_value_per_lot"]) < 0.01:
+        pytest.skip("the 0.01 minimum lot applies")
+    risk = result["lot_size"] * sl_pips * result["pip_value_per_lot"]
+    assert risk <= result["risk_amount_usd"] + 1e-9
