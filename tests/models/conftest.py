@@ -56,13 +56,13 @@ def bearish_signal(gbp_usd):
 
 @pytest.fixture
 def buy_plan(bullish_signal, practice_account):
+    # 50 stop-loss pips × $10 per pip per lot × 0.1 lots = $50, the account's maximum
     return TradePlan(bullish_signal, practice_account, entry=1.0900, stop_loss=1.0850,
-                     take_profit_1=1.1000, take_profit_2=1.1050, lot_size=1.0,
-                     risk_amount=50.0, reference_timeframe=Timeframe.H4)
+                     take_profit_1=1.1000, take_profit_2=1.1050, lot_size=0.1)
 
 
 @pytest.fixture
 def sell_plan(bearish_signal, practice_account):
+    # 50 stop-loss pips × $10 per pip per lot × 0.05 lots = $25
     return TradePlan(bearish_signal, practice_account, entry=1.2700, stop_loss=1.2750,
-                     take_profit_1=1.2600, take_profit_2=1.2550, lot_size=0.5,
-                     risk_amount=25.0, reference_timeframe=Timeframe.H1)
+                     take_profit_1=1.2600, take_profit_2=1.2550, lot_size=0.05)

@@ -2,23 +2,25 @@
 
 import pytest
 
-from tools.models import Account, Order, Timeframe, TradePlan
+from tools.models import Account, Order, TradePlan
 
 
 def test_buy_order_has_positive_units(buy_plan, practice_account):
     order = Order(buy_plan, practice_account, confirmed=True)
-    assert order.units() == 100_000
+    assert order.units() == 10_000  # 0.1 lots
 
 
 def test_sell_order_has_negative_units(sell_plan, practice_account):
-    assert Order(sell_plan, practice_account, confirmed=True).units() == -50_000
+    assert Order(sell_plan, practice_account, confirmed=True).units() == -5_000  # 0.05 lots
 
 
-def test_fractional_lot_size_gives_exact_units(bullish_signal, practice_account):
-    plan = TradePlan(bullish_signal, practice_account, entry=1.0900, stop_loss=1.0850,
-                     take_profit_1=1.1000, take_profit_2=1.1050, lot_size=0.29,
-                     risk_amount=14.5, reference_timeframe=Timeframe.H4)
-    assert Order(plan, practice_account, confirmed=True).units() == 29_000
+def test_fractional_lot_size_gives_exact_units(bullish_signal):
+    # 0.29 lots × 50 pips × $10 = $145, within 1% of $20,000
+    account = Account("FAKE-ACCOUNT-003", balance=20000, currency="USD",
+                      environment="practice", risk_percent=1.0)
+    plan = TradePlan(bullish_signal, account, entry=1.0900, stop_loss=1.0850,
+                     take_profit_1=1.1000, take_profit_2=1.1050, lot_size=0.29)
+    assert Order(plan, account, confirmed=True).units() == 29_000
 
 
 def test_order_type_is_market(buy_plan, practice_account):

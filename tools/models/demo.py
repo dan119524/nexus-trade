@@ -1,4 +1,4 @@
-"""Phase 05 demo. Run with: python -m tools.models.demo
+"""Phase 06 demo. Run with: python -m tools.models.demo
 
 Uses fixed example data only. It does not call the OANDA API.
 """
@@ -6,9 +6,9 @@ Uses fixed example data only. It does not call the OANDA API.
 from datetime import date, datetime, timezone
 
 from tools.models import (
-    Account, BacktestResult, BreakOfStructure, BuySetup, Candle, ChangeOfCharacter, CurrencyPair,
-    Order, SellSetup, Signal, StructureEvent, SwingPoint, Timeframe, TimeframeAnalysis, Trade,
-    TradePlan, TradeSetup, evaluate_setup,
+    Account, BacktestResult, BreakOfStructure, BuyDirection, Candle, ChangeOfCharacter, CurrencyPair,
+    Order, SellDirection, Signal, StructureEvent, SwingPoint, Timeframe, TimeframeAnalysis, Trade,
+    TradeDirection, TradePlan, TradeSetup, evaluate_setup, rank_pairs,
 )
 
 
@@ -21,35 +21,54 @@ def main():
         print(f"{pair.name}: {len(pair.price_data)} price points, "
               f"market structure = {pair.market_structure()}")
 
-    print("\n== TradeSetup: BuySetup and SellSetup ==")
-    buy = BuySetup(eur_usd, entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
-    sell = SellSetup(gbp_usd, entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
+    print("\n== Composition: TradeSetup delegates to its TradeDirection ==")
+    buy = TradeSetup(eur_usd, BuyDirection(), entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+    sell = TradeSetup(gbp_usd, SellDirection(), entry=1.2700, stop_loss=1.2750, take_profit=1.2550)
     for setup in (buy, sell):
-        print(f"{type(setup).__name__} is a TradeSetup: {isinstance(setup, TradeSetup)}")
-        # Inherited from TradeSetup: pair_name, entry, stop_loss, take_profit, reward_to_risk()
-        print(f"  inherited:  {setup.pair_name}, entry {setup.entry}, "
+        rules = setup.trade_direction
+        print(f"TradeSetup with a {type(rules).__name__} "
+              f"(a TradeDirection: {isinstance(rules, TradeDirection)}): direction = {setup.direction}")
+        # Held by TradeSetup: pair, prices, reward_to_risk()
+        print(f"  held by TradeSetup:  {setup.pair_name}, entry {setup.entry}, "
               f"stop loss {setup.stop_loss}, take profit {setup.take_profit}, "
               f"reward-to-risk = {setup.reward_to_risk():.2f}")
-        # Overridden in each subclass: direction, reward(), risk()
-        print(f"  overridden: direction = {setup.direction}, "
-              f"reward = {setup.reward():.4f}, risk = {setup.risk():.4f}")
+        # Delegated to the direction: reward(), risk(), is_beyond(), units_sign
+        print(f"  delegated to {rules.name}: reward = {setup.reward():.4f}, risk = {setup.risk():.4f}, "
+              f"TP beyond entry = {rules.is_beyond(setup.take_profit, setup.entry)}, "
+              f"units sign = {rules.units_sign:+d}")
 
     print("\n== Interface: evaluate_setup(setup: TradeSetup) ==")
-    buy_win = BuySetup(eur_usd, entry=1.0830, stop_loss=1.0750, take_profit=1.0940)
-    sell_open = SellSetup(gbp_usd, entry=1.2700, stop_loss=1.2900, take_profit=1.2500)
+    buy_win = TradeSetup(eur_usd, BuyDirection(), entry=1.0830, stop_loss=1.0750, take_profit=1.0940)
+    sell_open = TradeSetup(gbp_usd, SellDirection(), entry=1.2700, stop_loss=1.2900, take_profit=1.2500)
     for setup in (buy, sell, buy_win, sell_open):
-        # Same function for every setup; each subclass supplies its own outcome() (FR3)
-        print(f"{type(setup).__name__} {setup.pair_name} entry {setup.entry}, "
+        # Same function for every setup; its TradeDirection supplies the outcome rules (FR3)
+        print(f"{setup.direction} {setup.pair_name} entry {setup.entry}, "
               f"stop loss {setup.stop_loss}, take profit {setup.take_profit}: "
               f"outcome = {evaluate_setup(setup)}")
 
-    print("\n== BacktestResult ==")
-    tested = BacktestResult(eur_usd, date(2026, 10, 15), setups_tested=12, trade_count=10, win_count=6)
-    no_trades = BacktestResult(gbp_usd, date(2026, 10, 15), setups_tested=0, trade_count=0, win_count=0)
+    print("\n== Collection: BacktestResult holds its TradeSetups ==")
+    eur_sell_open = TradeSetup(eur_usd, SellDirection(), entry=1.0870, stop_loss=1.1000, take_profit=1.0700)
+    tested = BacktestResult(eur_usd, date(2026, 10, 15))
+    for setup in (buy, buy_win, eur_sell_open):
+        tested.add_setup(setup)
+    no_trades = BacktestResult(gbp_usd, date(2026, 10, 15))
     for result in (tested, no_trades):
-        print(f"{result.pair_name} on {result.test_date}: {result.setups_tested} setups, "
-              f"{result.trade_count} trades, {result.win_count} wins, "
+        outcomes = ", ".join(f"{s.direction} {s.outcome()}" for s in result.setups) or "none"
+        print(f"{result.pair_name} on {result.test_date}: setups [{outcomes}] -> "
+              f"{result.setups_tested} setups, {result.trade_count} trades, {result.win_count} wins, "
               f"win rate = {result.win_rate()}")
+    print(f"setups are returned as a {type(tested.setups).__name__}")
+    try:
+        tested.add_setup(sell)
+    except ValueError as error:
+        print(f"Rejected GBP_USD setup in the EUR_USD backtest: {error}")
+    try:
+        tested.add_setup(buy)
+    except ValueError as error:
+        print(f"Rejected the same setup twice: {error}")
+    tested.remove_setup(buy)
+    print(f"after removing the losing buy: {tested.setups_tested} setups, {tested.trade_count} trades, "
+          f"{tested.win_count} wins, win rate = {tested.win_rate()}")
 
     print("\n== Connected objects ==")
     print(f"buy setup and EUR_USD backtest share one CurrencyPair: {buy.pair is tested.pair is eur_usd}")
@@ -85,7 +104,9 @@ def main():
               f"-> vote {analysis.vote()}")
     signal = Signal(m1, m5, h1, h4)
     print(f"Signal {signal.pair.name}: direction {signal.direction()}, score {signal.score()}/4, "
-          f"minimum {signal.min_score}, valid = {signal.is_valid()}, trade direction = {signal.trade_direction()}")
+          f"minimum {signal.min_score}, valid = {signal.is_valid()}, "
+          f"trade direction = {type(signal.trade_direction()).__name__}, "
+          f"reference timeframe = {signal.reference_timeframe().value}")
 
     account = Account("FAKE-ACCOUNT-001", balance=5000, currency="USD",
                       environment="practice", risk_percent=1.0)
@@ -93,12 +114,13 @@ def main():
           f"{account.currency}, risk {account.risk_percent}% -> max risk {account.max_risk_amount()}")
 
     plan = TradePlan(signal, account, entry=1.0900, stop_loss=1.0850, take_profit_1=1.1000,
-                     take_profit_2=1.1050, lot_size=1.0, risk_amount=50.0,
-                     reference_timeframe=Timeframe.H4)
-    print(f"TradePlan owns a {type(plan.setup).__name__}: entry {plan.setup.entry}, "
+                     take_profit_2=1.1050, lot_size=0.1)
+    print(f"TradePlan owns a {plan.setup.direction} TradeSetup: entry {plan.setup.entry}, "
           f"stop loss {plan.setup.stop_loss}, TP1 {plan.setup.take_profit}, TP2 {plan.take_profit_2}, "
-          f"R:R {plan.setup.reward_to_risk():.2f}, lot {plan.lot_size}, risk {plan.risk_amount}, "
-          f"reference {plan.reference_timeframe.value}")
+          f"R:R {plan.setup.reward_to_risk():.2f}, reference {plan.reference_timeframe.value} (from the signal)")
+    print(f"  risk = lot {plan.lot_size} x {plan.stop_loss_pips} pips x "
+          f"${eur_usd.pip_value_per_lot(plan.setup.entry)} per pip per lot = ${plan.risk_amount:.2f} "
+          f"(max ${account.max_risk_amount():.2f})")
     print(f"  the plan's setup runs through the same interface: outcome = {evaluate_setup(plan.setup)}")
 
     order = Order(plan, account, confirmed=True)
@@ -109,23 +131,67 @@ def main():
         print(f"  Trade {trade.outcome}: exit {trade.exit_price}, "
               f"R multiple = {'None' if r is None else f'{r:+.2f}'}")
 
+    print("\n== Collection: Account records its Trades (FR11) ==")
+    first_trade = Trade(order, "win", exit_price=1.1000)
+    second_order = Order(plan, account, confirmed=True)
+    open_trade = Trade(second_order, "open")
+    account.add_trade(first_trade)
+    account.add_trade(open_trade)
+    print(f"recorded {len(account.trades)} trades: {len(account.open_trades())} open, "
+          f"{len(account.closed_trades())} closed")
+    account.close_trade(open_trade, Trade(second_order, "loss", exit_price=1.0850))
+    print(f"after closing the open trade: {[t.outcome for t in account.trades]}, "
+          f"{len(account.open_trades())} open, {len(account.closed_trades())} closed, "
+          f"total R = {sum(t.r_multiple() for t in account.closed_trades()):+.2f}")
+    try:
+        account.add_trade(Trade(order, "open"))
+    except ValueError as error:
+        print(f"Rejected a second trade for the same order: {error}")
+
+    print("\n== Collection: CurrencyPair holds its BacktestResults; rank_pairs (FR4) ==")
+    older = BacktestResult(eur_usd, date(2026, 10, 8))
+    older.add_setup(TradeSetup(eur_usd, BuyDirection(), entry=1.0820, stop_loss=1.0805, take_profit=1.0950))
+    eur_usd.add_backtest(older)
+    eur_usd.add_backtest(tested)
+    gbp_usd.add_backtest(no_trades)
+    aud_usd = CurrencyPair("AUD_USD", [(0.6650, 0.6600), (0.6700, 0.6640), (0.6750, 0.6680)])
+    aud_result = BacktestResult(aud_usd, date(2026, 10, 15))
+    aud_result.add_setup(TradeSetup(aud_usd, BuyDirection(), entry=0.6620, stop_loss=0.6590, take_profit=0.6680))
+    aud_result.add_setup(TradeSetup(aud_usd, BuyDirection(), entry=0.6620, stop_loss=0.6605, take_profit=0.6750))
+    aud_usd.add_backtest(aud_result)
+    print(f"EUR_USD holds {len(eur_usd.backtests)} backtests; most recent (added last) has "
+          f"win rate {eur_usd.latest_backtest().win_rate()} (the older one had {older.win_rate()})")
+    for rank, pair in enumerate(rank_pairs([usd_jpy, gbp_usd, eur_usd, aud_usd]), start=1):
+        latest = pair.latest_backtest()
+        if latest is None:
+            detail = "no backtest"
+        elif latest.trade_count == 0:
+            detail = "0 trades"
+        else:
+            detail = f"win rate {latest.win_rate()}"
+        print(f"  #{rank} {pair.name}: {detail}")
+
     print("\n== Invalid objects ==")
     try:
-        BuySetup(eur_usd, entry=1.0900, stop_loss=1.0950, take_profit=1.1000)
+        TradeSetup(eur_usd, BuyDirection(), entry=1.0900, stop_loss=1.0950, take_profit=1.1000)
     except ValueError as error:
         print(f"Rejected invalid buy setup: {error}")
     try:
-        SellSetup(gbp_usd, entry=1.2700, stop_loss=1.2650, take_profit=1.2550)
+        TradeSetup(gbp_usd, SellDirection(), entry=1.2700, stop_loss=1.2650, take_profit=1.2550)
     except ValueError as error:
         print(f"Rejected invalid sell setup: {error}")
     try:
-        BuySetup("EUR_USD", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+        TradeSetup("EUR_USD", BuyDirection(), entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
     except ValueError as error:
         print(f"Rejected pair name string: {error}")
     try:
-        TradeSetup(eur_usd, entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+        TradeDirection()
     except TypeError as error:
-        print(f"Rejected bare TradeSetup: {error}")
+        print(f"Rejected bare TradeDirection: {error}")
+    try:
+        TradeSetup(eur_usd, "buy", entry=1.0900, stop_loss=1.0850, take_profit=1.1000)
+    except ValueError as error:
+        print(f"Rejected direction string: {error}")
     try:
         Candle(eur_usd, Timeframe.H1, t0, open_=1.09, high=1.10, low=1.08, close=1.09,
                volume=0, complete=False)
@@ -139,14 +205,24 @@ def main():
         tie = Signal(m1, m5, TimeframeAnalysis(eur_usd, Timeframe.H1, "downtrend"),
                      TimeframeAnalysis(eur_usd, Timeframe.H4, "downtrend"))
         TradePlan(tie, account, entry=1.0900, stop_loss=1.0850, take_profit_1=1.1000,
-                  take_profit_2=1.1050, lot_size=1.0, risk_amount=50.0, reference_timeframe=Timeframe.H4)
+                  take_profit_2=1.1050, lot_size=0.1)
     except ValueError as error:
         print(f"Rejected trade plan for a tied signal: {error}")
     try:
         TradePlan(signal, account, entry=1.0900, stop_loss=1.0850, take_profit_1=1.0990,
-                  take_profit_2=1.1050, lot_size=1.0, risk_amount=50.0, reference_timeframe=Timeframe.H4)
+                  take_profit_2=1.1050, lot_size=0.1)
     except ValueError as error:
         print(f"Rejected trade plan with R:R 1.8: {error}")
+    try:
+        TradePlan(signal, account, entry=1.0900, stop_loss=1.0850, take_profit_1=1.1000,
+                  take_profit_2=1.1050, lot_size=1.0)
+    except ValueError as error:
+        print(f"Rejected trade plan risking $500 (1.0 lot x 50 pips x $10): {error}")
+    try:
+        eur_gbp = CurrencyPair("EUR_GBP", [(0.8550, 0.8500), (0.8580, 0.8520)])
+        eur_gbp.pip_value_per_lot(0.85)
+    except ValueError as error:
+        print(f"Rejected cross pair pip value: {error}")
     try:
         Account("FAKE-ACCOUNT-002", balance=5000, currency="USD", environment="live", risk_percent=1.0)
     except ValueError as error:
