@@ -46,7 +46,7 @@ def _build_client() -> tuple[API, str]:
 
 def _units_from_lot(lot_size: float, direction: str) -> int:
     """Convert lot size to OANDA units. Negative = short (sell)."""
-    units = int(lot_size * 100_000)
+    units = round(lot_size * 100_000)
     return -units if direction == "bearish" else units
 
 

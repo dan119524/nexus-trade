@@ -177,21 +177,21 @@ Advisory recommendations and Daniel's decisions:
 
 - `tools/confluence/score_confluence.py` picks bullish on a tie. `Signal` gives no direction instead, as decided. The pipeline tool was not changed.
 
-## Known Bug: Separate Fix After Phase 05
+## Known Bug: Fixed After Phase 05
 
 | Item | Detail |
 |---|---|
 | Where | `tools/oanda/execute_trade.py`, `_units_from_lot` |
 | Bug | `int(lot_size * 100_000)` truncates a floating-point product. 0.29 lots gives 28,999 units instead of 29,000 (also 0.57 and 0.58 lots). The order sent to OANDA practice is 1 unit short. |
 | Model behavior | `Order.units()` uses `round()` and gives 29,000, covered by `test_fractional_lot_size_gives_exact_units`. |
-| Why not fixed now | Phase 05 rules say pipeline tools outside `tools/models/` are not changed. |
-| Plan | Fix in a separate change after Phase 05 is merged, with a test, following the Section 5 tool-failure steps in `AGENTS.md`. |
+| Why not fixed in Phase 05 | Phase 05 rules say pipeline tools outside `tools/models/` are not changed. |
+| Fix | Fixed after Phase 05 on branch `fix/units-rounding`, merged into `main` through a pull request: `_units_from_lot` uses `round(lot_size * 100_000)`, so 0.29 lots gives 29,000 units. `tests/test_execute_trade.py` checks 29,000 for a buy and −29,000 for a sell without calling OANDA. |
 
 ## Notes for Later Phases
 
 | Phase | Note |
 |---|---|
-| After 05 | Fix the `_units_from_lot` truncation bug (see Known Bug). |
+| After 05 | Fixed: the `_units_from_lot` truncation bug (see Known Bug). |
 | 06 | **First item. Known FR9 gap (A1):** `TradePlan` checks the declared risk amount but not that the lot size produces it. Needs the stop-loss distance in pips and the pip value per lot (`tools/trade_plan/calculate_lot_size.py`). |
 | 06 | With A1: `TradePlan` reference timeframe must be the highest timeframe that voted with the signal, H4 → H1 → M5 → M1 (A2, Workflow 04). Amend FR9 for A1 and A2 together. |
 | 06 | Resolve the FR1 vs `detect_trend.py` conflict. |
