@@ -5,10 +5,11 @@
 | Entity | Description |
 |---|---|
 | **CurrencyPair** | A forex market NEXUS analyzes, such as EUR_USD, together with its past price data and its current market structure. |
-| **TradeSetup** | A suggested trade on one currency pair, with a direction, an entry price, a stop loss, and a take profit. Its direction comes from BuySetup or SellSetup. |
-| **BuySetup** | A trade setup whose direction is buy. Its stop loss is below its entry, and its take profit is above it. |
-| **SellSetup** | A trade setup whose direction is sell. Its take profit is below its entry, and its stop loss is above it. |
-| **BacktestResult** | The outcome of testing trade setups on one currency pair's past price data, showing how well they would have performed. |
+| **TradeSetup** | A suggested trade on one currency pair, with a direction, an entry price, a stop loss, and a take profit. Its direction rules come from its TradeDirection. |
+| **TradeDirection** | The rules that differ between buying and selling: price order, reward, risk, outcome, which price is beyond another, and the units sign. Its kind comes from BuyDirection or SellDirection. |
+| **BuyDirection** | The buy rules: stop loss < entry < take profit, and higher prices are in the trade's favor. |
+| **SellDirection** | The sell rules: take profit < entry < stop loss, and lower prices are in the trade's favor. |
+| **BacktestResult** | The outcome of testing trade setups on one currency pair's past price data, showing how well they would have performed. It holds the setups it tested. |
 | **Candle** | One complete OHLC bar for a currency pair on one timeframe, with its time and volume. |
 | **SwingPoint** | A confirmed swing high or swing low on one timeframe, labeled HH, HL, LH, or LL. |
 | **StructureEvent** | A candle close beyond a labeled swing point, in a bullish or bearish direction. Its kind comes from BreakOfStructure or ChangeOfCharacter. |
@@ -100,7 +101,7 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 
 - Domain classes in `tools/models/` hold data and check rules only. They never call the OANDA API or the Claude API.
 - Demos and tests use fake account IDs only.
-- One-to-many relationships are not stored as lists, dicts, or sets until Phase 06.
+- One-to-many relationships are stored as typed collections from Phase 06. BacktestResult stores its trade setups in a private list. The other one-to-many relationships are still not stored (see Relationships and Multiplicities).
 
 ## CRC Analysis
 
@@ -119,37 +120,52 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 | Responsibilities | Collaborators |
 |---|---|
 | Know which currency pair it belongs to | CurrencyPair |
-| Know its direction, entry price, stop loss, and take profit (direction comes from BuySetup or SellSetup) | |
-| Know its reward-to-risk ratio | |
-| Know its outcome (win, loss, or open) on its pair's price data (FR3; computed by BuySetup or SellSetup) | |
+| Know its trade direction, and whether it is a buy or a sell | TradeDirection |
+| Know its entry price, stop loss, and take profit, in the price order its direction requires (FR2) | TradeDirection |
+| Know its reward, its risk, and its reward-to-risk ratio | TradeDirection |
+| Know its outcome (win, loss, or open) on its pair's price data (FR3) | TradeDirection |
 
-### BuySetup
+### TradeDirection
 
 | Responsibilities | Collaborators |
 |---|---|
-| Know that its direction is buy | |
+| Know whether it is buy or sell (kind comes from BuyDirection or SellDirection) | |
+| Check the price order of an entry, a stop loss, and a take profit | |
+| Know the reward and the risk for an entry, a stop loss, and a take profit | |
+| Know the outcome (win, loss, or open) of a stop loss and a take profit on price data | |
+| Know whether one price is beyond another in the trade's favor | |
+| Know its units sign | |
+
+### BuyDirection
+
+| Responsibilities | Collaborators |
+|---|---|
+| Know that it is buy | |
 | Require stop loss < entry < take profit | |
-| Know its reward (take profit − entry) and its risk (entry − stop loss) | |
-| Know its outcome: a win when a high reaches take profit, a loss when a low reaches stop loss | |
+| Know the reward (take profit − entry) and the risk (entry − stop loss) | |
+| Know the outcome: a win when a high reaches take profit, a loss when a low reaches stop loss | |
+| Know that a price is beyond another when it is higher, and that its units sign is positive | |
 
-### SellSetup
+### SellDirection
 
 | Responsibilities | Collaborators |
 |---|---|
-| Know that its direction is sell | |
+| Know that it is sell | |
 | Require take profit < entry < stop loss | |
-| Know its reward (entry − take profit) and its risk (stop loss − entry) | |
-| Know its outcome: a win when a low reaches take profit, a loss when a high reaches stop loss | |
+| Know the reward (entry − take profit) and the risk (stop loss − entry) | |
+| Know the outcome: a win when a low reaches take profit, a loss when a high reaches stop loss | |
+| Know that a price is beyond another when it is lower, and that its units sign is negative | |
 
 ### BacktestResult
 
 | Responsibilities | Collaborators |
 |---|---|
 | Know which currency pair was tested | CurrencyPair |
-| Know which trade setups were tested | TradeSetup (Phase 06) |
-| Know its number of trades and its win rate | |
+| Know which trade setups were tested, and add or remove one | TradeSetup |
+| Accept only a trade setup on its own currency pair (the same object) that it does not already hold | TradeSetup |
+| Know its number of setups tested, trades, and wins from each setup's outcome; open setups are not trades (FR3) | TradeSetup |
+| Know its win rate: wins divided by trades | |
 | Know when the test was run | |
-| Know the number of wins | |
 
 ### Candle
 
@@ -214,7 +230,7 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 |---|---|
 | Know the valid signal it is based on | Signal |
 | Own a trade setup with its entry, stop loss, and take profit (TP1), in the signal's trade direction | TradeSetup |
-| Know its TP2, beyond TP1 | |
+| Know its TP2, beyond TP1 in its trade direction | TradeDirection |
 | Reject a reward-to-risk ratio (to TP1) below 2, rounded to 2 decimals before comparing (FR2) | |
 | Know its lot size, its risk amount, and its reference timeframe | Timeframe |
 | Require its risk amount not to exceed the account's risk percent of its balance (FR9) | Account |
@@ -236,7 +252,7 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 | Know the account it is for, which must be its trade plan's account and a practice account (FR10) | Account |
 | Know that its type is market | |
 | Require the trader's explicit confirmation (FR10) | |
-| Know its units: lot size × 100,000, positive for a buy and negative for a sell | |
+| Know its units: lot size × 100,000 times its direction's units sign (positive for a buy, negative for a sell) | TradeDirection |
 
 ### Trade
 
@@ -245,7 +261,7 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 | Know the order that opened it | Order |
 | Know its outcome: win, loss, or open (FR11), where a win has an R multiple above 0 and a loss an R multiple below 0 | |
 | Know its exit price once closed | |
-| Know its R multiple (FR11): the price move from entry to exit in its trade direction, divided by its setup's risk; none while open | |
+| Know its R multiple (FR11): the price move from entry to exit in its trade direction, divided by its setup's risk; none while open | TradeDirection |
 
 ## Relationships and Multiplicities
 
@@ -254,6 +270,7 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 | CurrencyPair | has | TradeSetup | `1` to `0..*` | Association |
 | CurrencyPair | has | BacktestResult | `1` to `0..*` | Association |
 | BacktestResult | is based on | TradeSetup | `0..1` to `0..*` | Aggregation |
+| TradeSetup | follows the rules of | TradeDirection | `0..*` to `1` | Association |
 | CurrencyPair | has | Candle | `1` to `0..*` | Association |
 | CurrencyPair | has | SwingPoint | `1` to `0..*` | Association |
 | CurrencyPair | has | TimeframeAnalysis | `1` to `0..*` | Association |
@@ -272,7 +289,8 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 - A backtest result is based on zero or more trade setups, since a test may find none. A trade setup belongs to at most one backtest result, because a live suggestion is not part of any backtest.
 - All trade setups in a backtest result must belong to the same currency pair as that backtest result.
 - The two CurrencyPair associations are one-way: each TradeSetup and each BacktestResult holds a reference to its CurrencyPair, and a CurrencyPair holds no references to its setups or results.
-- The BacktestResult–TradeSetup aggregation and the same-pair rule are implemented in Phase 06, when collections are introduced.
+- A BacktestResult holds its trade setups in a private list. It accepts a setup only if the setup's currency pair is the same object as its own and it does not already hold that setup. It returns the setups as a tuple.
+- That a trade setup belongs to at most one backtest result is documented only. It is not enforced, because a setup holds no reference to its backtest results.
 - Candle, SwingPoint, and TimeframeAnalysis each hold a one-way reference to their CurrencyPair. A CurrencyPair holds no references to them until Phase 06.
 - A Signal holds four named references to TimeframeAnalysis objects, m1, m5, h1, and h4, not a collection.
 - A TradePlan creates and owns its TradeSetup. The setup does not exist without the plan.
@@ -282,15 +300,14 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 
 | Subclass | Relationship | Superclass |
 |---|---|---|
-| BuySetup | is a | TradeSetup |
-| SellSetup | is a | TradeSetup |
+| BuyDirection | is a | TradeDirection |
+| SellDirection | is a | TradeDirection |
 | BreakOfStructure | is a | StructureEvent |
 | ChangeOfCharacter | is a | StructureEvent |
 
-- BuySetup and SellSetup exist because FR2 gives every trade setup a direction, buy or sell, and the two directions need opposite price orders.
-- TradeSetup holds the state and behavior both directions share: the currency pair, the entry price, the stop loss, the take profit, price validation, and the reward-to-risk ratio (reward divided by risk).
-- Each subclass supplies what differs by direction: its direction, its price-order check, its reward, and its risk.
-- TradeSetup is an abstract base class, so a bare TradeSetup cannot be created; only BuySetup and SellSetup can. Its price-order check, direction, reward, risk, and outcome are abstract methods that each subclass implements.
+- BuyDirection and SellDirection exist because FR2 gives every trade setup a direction, buy or sell, and the two directions need opposite rules.
+- TradeDirection is an abstract base class, so a bare TradeDirection cannot be created; only BuyDirection and SellDirection can.
+- TradeSetup is a concrete class. It holds the currency pair, the entry price, the stop loss, the take profit, price validation, and the reward-to-risk ratio, and it delegates everything that differs by direction to its TradeDirection.
 - StructureEvent is an abstract base class, so a bare StructureEvent cannot be created; only BreakOfStructure and ChangeOfCharacter can.
 - BreakOfStructure and ChangeOfCharacter exist because FR7 separates a break with the trend from a break against it. StructureEvent holds the broken swing point, the time, the close price, the direction, and the check that the close is beyond the swing point. Each subclass supplies which swing labels it may break.
 
@@ -298,9 +315,14 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 
 | Interface | Abstract method | Implemented by | Used through the interface by | Requirement |
 |---|---|---|---|---|
-| TradeSetup | outcome() | BuySetup, SellSetup | evaluate_setup(setup: TradeSetup) | FR3 |
+| TradeDirection | name, check_price_order(), reward(), risk(), outcome(), is_beyond(), units_sign | BuyDirection, SellDirection | TradeSetup (delegation), TradePlan (is_beyond for TP2), Order and Trade (units_sign) | FR2, FR3, FR9, FR10, FR11 |
 
+- TradeSetup.outcome() returns its direction's outcome for the setup's stop loss and take profit on its currency pair's price data. evaluate_setup(setup: TradeSetup) still accepts any TradeSetup and returns its outcome, without knowing its direction.
 - outcome() returns "win", "loss", or "open" by reading the setup's currency pair price data from the first price point.
 - A buy wins when a high reaches its take profit and loses when a low reaches its stop loss. A sell is the mirror: it wins when a low reaches its take profit and loses when a high reaches its stop loss.
 - If one price point touches both the take profit and the stop loss, the outcome is a loss. If neither is reached, the outcome is "open".
-- evaluate_setup accepts any TradeSetup and returns its outcome, without knowing whether it is a BuySetup or a SellSetup.
+
+## Composition over Inheritance
+
+- Phase 04 made BuySetup and SellSetup subclasses of TradeSetup only to change the direction rules, while TradePlan, Order, and Trade still branched on the "buy" and "sell" strings for TP2, the units sign, and the R multiple. A new direction-dependent rule therefore had to be added in four or five places, and TradeSetup's constructor called a method that subclasses overrode before their own state existed (Phase 04 finding 6).
+- TradeSetup now holds a TradeDirection object and delegates to it, so every direction rule lives in BuyDirection or SellDirection, TradePlan, Order, and Trade ask the same object instead of branching, and the direction exists before the price-order check runs.

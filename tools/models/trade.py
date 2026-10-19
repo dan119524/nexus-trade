@@ -43,7 +43,5 @@ class Trade:
         if self._outcome == "open":
             return None
         setup = self._order.plan.setup
-        move = self._exit_price - setup.entry
-        if setup.direction == "sell":
-            move = -move
+        move = setup.trade_direction.units_sign * (self._exit_price - setup.entry)
         return move / setup.risk()

@@ -1,10 +1,11 @@
 """TradePlan: the plan for a valid signal (Phase 05 entity)."""
 
 from tools.models.account import Account
-from tools.models.buy_setup import BuySetup
+from tools.models.buy_direction import BuyDirection
 from tools.models.candle import to_positive_price, validate_timeframe
-from tools.models.sell_setup import SellSetup
+from tools.models.sell_direction import SellDirection
 from tools.models.signal import Signal
+from tools.models.trade_setup import TradeSetup
 
 MIN_REWARD_TO_RISK = 2
 
@@ -12,7 +13,7 @@ MIN_REWARD_TO_RISK = 2
 class TradePlan:
     """A trade setup owned by the plan, plus TP2, lot size, risk amount, and reference timeframe (FR9).
 
-    The plan creates its own BuySetup or SellSetup from the signal's trade direction.
+    The plan creates its own TradeSetup, with a BuyDirection or SellDirection from the signal.
     """
 
     def __init__(self, signal, account, entry, stop_loss, take_profit_1, take_profit_2,
@@ -25,15 +26,13 @@ class TradePlan:
             raise ValueError(f"account must be an Account, got {account!r}")
         self._signal = signal
         self._account = account
-        setup_class = BuySetup if signal.trade_direction() == "buy" else SellSetup
-        self._setup = setup_class(signal.pair, entry, stop_loss, take_profit_1)
+        direction = BuyDirection() if signal.trade_direction() == "buy" else SellDirection()
+        self._setup = TradeSetup(signal.pair, direction, entry, stop_loss, take_profit_1)
         if round(self._setup.reward_to_risk(), 2) < MIN_REWARD_TO_RISK:
             raise ValueError("reward-to-risk to TP1 must be at least 2")
         take_profit_2 = to_positive_price(take_profit_2, "take profit 2")
-        if self._setup.direction == "buy" and not take_profit_2 > self._setup.take_profit:
-            raise ValueError("a buy needs TP2 above TP1")
-        if self._setup.direction == "sell" and not take_profit_2 < self._setup.take_profit:
-            raise ValueError("a sell needs TP2 below TP1")
+        if not direction.is_beyond(take_profit_2, self._setup.take_profit):
+            raise ValueError(f"a {direction.name} needs TP2 beyond TP1")
         self._take_profit_2 = take_profit_2
         self._lot_size = to_positive_price(lot_size, "lot size")
         self._risk_amount = to_positive_price(risk_amount, "risk amount")

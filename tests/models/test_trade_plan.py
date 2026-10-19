@@ -3,7 +3,7 @@
 import pytest
 
 from tests.models.conftest import make_signal
-from tools.models import Account, BuySetup, SellSetup, Timeframe, TradePlan
+from tools.models import Account, BuyDirection, SellDirection, Timeframe, TradePlan
 
 
 def make_plan(signal, account, **changes):
@@ -14,13 +14,15 @@ def make_plan(signal, account, **changes):
 
 
 def test_buy_plan_owns_a_buy_setup_on_the_signal_pair(buy_plan, bullish_signal):
-    assert isinstance(buy_plan.setup, BuySetup)
+    assert isinstance(buy_plan.setup.trade_direction, BuyDirection)
+    assert buy_plan.setup.direction == "buy"
     assert buy_plan.setup.pair is bullish_signal.pair
     assert (buy_plan.setup.entry, buy_plan.setup.stop_loss, buy_plan.setup.take_profit) == (1.09, 1.085, 1.10)
 
 
 def test_sell_plan_owns_a_sell_setup(sell_plan, bearish_signal):
-    assert isinstance(sell_plan.setup, SellSetup)
+    assert isinstance(sell_plan.setup.trade_direction, SellDirection)
+    assert sell_plan.setup.direction == "sell"
     assert sell_plan.setup.pair is bearish_signal.pair
 
 

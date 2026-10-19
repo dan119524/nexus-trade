@@ -39,6 +39,5 @@ class Order:
         return "MARKET"
 
     def units(self):
-        """Return lot size × 100,000, positive for a buy and negative for a sell."""
-        units = round(self._plan.lot_size * UNITS_PER_LOT)
-        return units if self._plan.setup.direction == "buy" else -units
+        """Return lot size × 100,000 times the direction's units sign (positive buy, negative sell)."""
+        return self._plan.setup.trade_direction.units_sign * round(self._plan.lot_size * UNITS_PER_LOT)
