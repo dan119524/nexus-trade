@@ -10,10 +10,16 @@ rectangle "NEXUS Trade" {
   usecase "UC2: Review a suggested trade setup\nbefore deciding whether to act on it" as UC2
   usecase "UC3: Backtest trade setups for a\ncurrency pair on past price data" as UC3
   usecase "UC4: See which currency pairs\nperformed best in backtests" as UC4
+  usecase "UC5: Be alerted only when enough\ntimeframes agree on a direction" as UC5
+  usecase "UC6: Place a practice market order\nfrom a trade plan" as UC6
+  usecase "UC7: Review recorded trades\nand their outcomes" as UC7
 }
 
 Trader -- UC1
 Trader -- UC2
 Trader -- UC3
 Trader -- UC4
+Trader -- UC5
+Trader -- UC6
+Trader -- UC7
 @enduml

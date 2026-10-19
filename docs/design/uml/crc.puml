@@ -18,6 +18,8 @@ class TradeSetup {
   Know its direction, entry price, stop loss, and take profit
   (direction comes from BuySetup or SellSetup)
   Know its reward-to-risk ratio
+  Know its outcome (win, loss, or open) on its pair's price data
+  (FR3; computed by BuySetup or SellSetup)
   .. Collaborators ..
   CurrencyPair
 }
@@ -27,6 +29,8 @@ class BuySetup {
   Know that its direction is buy
   Require stop loss < entry < take profit
   Know its reward (take profit − entry) and its risk (entry − stop loss)
+  Know its outcome: a win when a high reaches take profit,
+  a loss when a low reaches stop loss
   .. Collaborators ..
 }
 
@@ -35,6 +39,8 @@ class SellSetup {
   Know that its direction is sell
   Require take profit < entry < stop loss
   Know its reward (entry − take profit) and its risk (stop loss − entry)
+  Know its outcome: a win when a low reaches take profit,
+  a loss when a high reaches stop loss
   .. Collaborators ..
 }
 
@@ -48,5 +54,131 @@ class BacktestResult {
   .. Collaborators ..
   CurrencyPair
   TradeSetup (Phase 06)
+}
+
+class Candle {
+  .. Responsibilities ..
+  Know its currency pair and timeframe
+  Know its time, open, high, low, close, and volume
+  Reject an incomplete candle, a high below its low,
+  an open or close outside [low, high], and any price <= 0 (FR6)
+  .. Collaborators ..
+  CurrencyPair
+  Timeframe
+}
+
+class SwingPoint {
+  .. Responsibilities ..
+  Know its currency pair and timeframe
+  Know its time, its price, and whether it is a high or a low
+  Know its label: HH or LH for a high, HL or LL for a low (FR7)
+  .. Collaborators ..
+  CurrencyPair
+  Timeframe
+}
+
+class StructureEvent {
+  .. Responsibilities ..
+  Know the swing point it broke
+  Know the time and the close price of the break
+  Know its direction, bullish or bearish
+  (kind comes from BreakOfStructure or ChangeOfCharacter)
+  Require the close to be beyond the swing point's price in its direction
+  .. Collaborators ..
+  SwingPoint
+}
+
+class BreakOfStructure {
+  .. Responsibilities ..
+  Require the broken swing point to be an HH (bullish) or an LL (bearish)
+  .. Collaborators ..
+}
+
+class ChangeOfCharacter {
+  .. Responsibilities ..
+  Require the broken swing point to be an LH (bullish) or an HL (bearish)
+  .. Collaborators ..
+}
+
+class TimeframeAnalysis {
+  .. Responsibilities ..
+  Know its currency pair and timeframe
+  Know its trend: uptrend, downtrend, or ranging
+  Know its most recent structure event, if any,
+  on its own currency pair and timeframe
+  Know its vote (bullish, bearish, or neutral) from its trend
+  and its most recent structure event (see Voting)
+  .. Collaborators ..
+  CurrencyPair
+  Timeframe
+  StructureEvent
+}
+
+class Signal {
+  .. Responsibilities ..
+  Know its M1, M5, H1, and H4 analyses, all for the same currency pair
+  Know its direction: the majority of the bullish and bearish votes,
+  or no direction on a tie
+  Know its score: the number of timeframes voting its direction
+  (0 when it has no direction)
+  Know its minimum confluence score, a whole number from 1 to 4 (default 3)
+  Know whether it is valid: it has a direction and its score
+  is at least the minimum (FR8)
+  Know its trade direction (bullish leads to buy, bearish leads to sell)
+  .. Collaborators ..
+  TimeframeAnalysis
+}
+
+class TradePlan {
+  .. Responsibilities ..
+  Know the valid signal it is based on
+  Own a trade setup with its entry, stop loss, and take profit (TP1),
+  in the signal's trade direction
+  Know its TP2, beyond TP1
+  Reject a reward-to-risk ratio (to TP1) below 2,
+  rounded to 2 decimals before comparing (FR2)
+  Know its lot size, its risk amount, and its reference timeframe
+  Require its risk amount not to exceed the account's
+  risk percent of its balance (FR9)
+  .. Collaborators ..
+  Signal
+  TradeSetup
+  Timeframe
+  Account
+}
+
+class Account {
+  .. Responsibilities ..
+  Know its account ID, balance, and currency
+  Know its environment and reject any environment other than practice (FR5)
+  Know its risk percent, greater than 0 and at most 2 (FR9)
+  Know its maximum risk amount per trade
+  .. Collaborators ..
+}
+
+class Order {
+  .. Responsibilities ..
+  Know the trade plan it was created from
+  Know the account it is for, which must be its trade plan's account
+  and a practice account (FR10)
+  Know that its type is market
+  Require the trader's explicit confirmation (FR10)
+  Know its units: lot size × 100,000, positive for a buy
+  and negative for a sell
+  .. Collaborators ..
+  TradePlan
+  Account
+}
+
+class Trade {
+  .. Responsibilities ..
+  Know the order that opened it
+  Know its outcome: win, loss, or open (FR11), where a win has
+  an R multiple above 0 and a loss an R multiple below 0
+  Know its exit price once closed
+  Know its R multiple (FR11): the price move from entry to exit
+  in its trade direction, divided by its setup's risk; none while open
+  .. Collaborators ..
+  Order
 }
 @enduml

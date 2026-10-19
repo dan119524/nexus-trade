@@ -1,12 +1,17 @@
 @startuml domain-model
-' Sources: docs/design/requirements.md, sections "Domain Entities" and
-' "Relationships and Multiplicities", for the classes and relationships.
-' tools/models/ (Phase 04) for the attributes, methods, object references, and inheritance.
+' Sources: docs/design/requirements.md, sections "Domain Entities", "Values",
+' "Relationships and Multiplicities", "Inheritance", and "Interfaces", for the classes
+' and relationships.
+' tools/models/ (Phase 05) for the attributes, methods, object references, inheritance,
+' and abstract classes.
 ' Attributes are private (-), or protected (#) when a subclass reads them, and are
 ' exposed as read-only @property (+). No setters. Subclasses list only the members
 ' they define or override; inherited members are not repeated.
+' {abstract} marks an @abstractmethod. Abstract classes inherit from ABC.
 skinparam classAttributeIconSize 0
 hide empty members
+
+' ---------- Phase 02-04 classes ----------
 
 class CurrencyPair {
   - _name : str
@@ -19,30 +24,34 @@ class CurrencyPair {
   + market_structure() : str
 }
 
-class TradeSetup {
+abstract class TradeSetup {
   - _pair : CurrencyPair
   # _entry : float
   # _stop_loss : float
   # _take_profit : float
   + __init__(pair : CurrencyPair, entry : float, stop_loss : float, take_profit : float)
-  # _check_price_order()
+  # {abstract} _check_price_order()
   .. read-only properties ..
   + pair : CurrencyPair
   + pair_name : str
-  + direction : str
+  + {abstract} direction : str
   + entry : float
   + stop_loss : float
   + take_profit : float
   .. methods ..
-  + reward() : float
-  + risk() : float
+  + {abstract} reward() : float
+  + {abstract} risk() : float
   + reward_to_risk() : float
+  + {abstract} outcome() : str
 }
 
 note right of TradeSetup
-  Cannot be created directly: _check_price_order(),
-  direction, reward(), and risk() raise
-  NotImplementedError. Becomes abstract in Phase 05.
+  Abstract base class (ABC): a bare TradeSetup
+  cannot be created (TypeError).
+  Interface used polymorphically by the
+  module-level function in trade_setup.py:
+  + evaluate_setup(setup : TradeSetup) : str
+  outcome() returns "win", "loss", or "open" (FR3).
 end note
 
 class BuySetup {
@@ -53,6 +62,7 @@ class BuySetup {
   .. methods ..
   + reward() : float
   + risk() : float
+  + outcome() : str
 }
 
 class SellSetup {
@@ -63,6 +73,7 @@ class SellSetup {
   .. methods ..
   + reward() : float
   + risk() : float
+  + outcome() : str
 }
 
 TradeSetup <|-- BuySetup
@@ -97,11 +108,212 @@ end note
 note "All trade setups in a backtest result must belong\nto the same currency pair as that backtest result." as SamePair
 SamePair .. BacktestResult
 
+' ---------- Phase 05 domain expansion ----------
+
+enum Timeframe {
+  M1
+  M5
+  H1
+  H4
+}
+
+class Candle {
+  - _pair : CurrencyPair
+  - _timeframe : Timeframe
+  - _time : datetime
+  - _open : float
+  - _high : float
+  - _low : float
+  - _close : float
+  - _volume : int
+  + __init__(pair : CurrencyPair, timeframe : Timeframe, time : datetime, open_ : float, high : float, low : float, close : float, volume : int, complete : bool)
+  .. read-only properties ..
+  + pair : CurrencyPair
+  + timeframe : Timeframe
+  + time : datetime
+  + open : float
+  + high : float
+  + low : float
+  + close : float
+  + volume : int
+}
+
+class SwingPoint {
+  - _pair : CurrencyPair
+  - _timeframe : Timeframe
+  - _time : datetime
+  - _price : float
+  - _label : str
+  + __init__(pair : CurrencyPair, timeframe : Timeframe, time : datetime, price : float, label : str)
+  .. read-only properties ..
+  + pair : CurrencyPair
+  + timeframe : Timeframe
+  + time : datetime
+  + price : float
+  + label : str
+  + kind : str
+}
+
+abstract class StructureEvent {
+  - _swing : SwingPoint
+  - _time : datetime
+  - _close : float
+  - _direction : str
+  + __init__(swing : SwingPoint, time : datetime, close : float)
+  # {abstract} _direction_for(label : str) : str
+  .. read-only properties ..
+  + swing : SwingPoint
+  + time : datetime
+  + close : float
+  + direction : str
+}
+
+note right of StructureEvent
+  Abstract base class (ABC): a bare StructureEvent
+  cannot be created (TypeError).
+  __init__ sets direction from _direction_for(swing.label).
+end note
+
+class BreakOfStructure {
+  + __init__(swing : SwingPoint, time : datetime, close : float)
+  # _direction_for(label : str) : str
+}
+
+class ChangeOfCharacter {
+  + __init__(swing : SwingPoint, time : datetime, close : float)
+  # _direction_for(label : str) : str
+}
+
+StructureEvent <|-- BreakOfStructure
+StructureEvent <|-- ChangeOfCharacter
+
+class TimeframeAnalysis {
+  - _pair : CurrencyPair
+  - _timeframe : Timeframe
+  - _trend : str
+  - _latest_event : StructureEvent | None
+  + __init__(pair : CurrencyPair, timeframe : Timeframe, trend : str, latest_event : StructureEvent | None = None)
+  .. read-only properties ..
+  + pair : CurrencyPair
+  + timeframe : Timeframe
+  + trend : str
+  + latest_event : StructureEvent | None
+  .. methods ..
+  + vote() : str
+}
+
+class Signal {
+  - _m1 : TimeframeAnalysis
+  - _m5 : TimeframeAnalysis
+  - _h1 : TimeframeAnalysis
+  - _h4 : TimeframeAnalysis
+  - _min_score : int
+  + __init__(m1 : TimeframeAnalysis, m5 : TimeframeAnalysis, h1 : TimeframeAnalysis, h4 : TimeframeAnalysis, min_score : int = 3)
+  .. read-only properties ..
+  + m1 : TimeframeAnalysis
+  + m5 : TimeframeAnalysis
+  + h1 : TimeframeAnalysis
+  + h4 : TimeframeAnalysis
+  + pair : CurrencyPair
+  + min_score : int
+  .. methods ..
+  - _count(vote : str) : int
+  + direction() : str | None
+  + score() : int
+  + is_valid() : bool
+  + trade_direction() : str | None
+}
+
+class Account {
+  - _account_id : str
+  - _balance : float
+  - _currency : str
+  - _environment : str
+  - _risk_percent : float
+  + __init__(account_id : str, balance : float, currency : str, environment : str, risk_percent : float)
+  .. read-only properties ..
+  + account_id : str
+  + balance : float
+  + currency : str
+  + environment : str
+  + risk_percent : float
+  .. methods ..
+  + max_risk_amount() : float
+}
+
+class TradePlan {
+  - _signal : Signal
+  - _account : Account
+  - _setup : TradeSetup
+  - _take_profit_2 : float
+  - _lot_size : float
+  - _risk_amount : float
+  - _reference_timeframe : Timeframe
+  + __init__(signal : Signal, account : Account, entry : float, stop_loss : float, take_profit_1 : float, take_profit_2 : float, lot_size : float, risk_amount : float, reference_timeframe : Timeframe)
+  .. read-only properties ..
+  + signal : Signal
+  + account : Account
+  + setup : TradeSetup
+  + take_profit_2 : float
+  + lot_size : float
+  + risk_amount : float
+  + reference_timeframe : Timeframe
+}
+
+note right of TradePlan
+  Creates its own BuySetup or SellSetup from
+  signal.trade_direction(), signal.pair, entry,
+  stop_loss, and take_profit_1 (composition).
+end note
+
+class Order {
+  - _plan : TradePlan
+  - _account : Account
+  + __init__(plan : TradePlan, account : Account, confirmed : bool)
+  .. read-only properties ..
+  + plan : TradePlan
+  + account : Account
+  + order_type : str
+  .. methods ..
+  + units() : int
+}
+
+class Trade {
+  - _order : Order
+  - _outcome : str
+  - _exit_price : float | None
+  + __init__(order : Order, outcome : str, exit_price : float | None = None)
+  .. read-only properties ..
+  + order : Order
+  + outcome : str
+  + exit_price : float | None
+  .. methods ..
+  + r_multiple() : float | None
+}
+
+CurrencyPair "1" <-- "0..*" Candle : has >
+CurrencyPair "1" <-- "0..*" SwingPoint : has >
+CurrencyPair "1" <-- "0..*" TimeframeAnalysis : has >
+StructureEvent "0..1" --> "1" SwingPoint : breaks >
+TimeframeAnalysis "0..*" --> "0..1" StructureEvent : knows its most recent >
+Signal "0..*" o--> "4" TimeframeAnalysis : combines (m1, m5, h1, h4) >
+TradePlan "0..1" --> "1" Signal : is based on >
+TradePlan "1" *--> "1" TradeSetup : owns >
+TradePlan "0..*" --> "1" Account : is sized for >
+Order "0..1" --> "1" TradePlan : is created from >
+Order "0..*" --> "1" Account : is for >
+Trade "0..1" --> "1" Order : is opened by >
+
+' ---------- Notes ----------
+
 note as AssociationLinks
-  The two CurrencyPair associations are one-way object references:
-  TradeSetup and BacktestResult each hold their CurrencyPair;
-  CurrencyPair holds no references back.
-  Same-pair check: planned, not yet implemented (Phase 06).
+  All associations are one-way object references in the arrow direction.
+  CurrencyPair holds no references back to its setups, results, candles,
+  swing points, or analyses. An Account holds no references to its orders
+  or trades. Signal holds four named references, not a collection.
+  One-to-many collections: planned, not yet implemented (Phase 06).
+  Timeframe is an enumeration value held by Candle, SwingPoint,
+  TimeframeAnalysis, and TradePlan.
 end note
 AssociationLinks .. CurrencyPair
 
@@ -111,16 +323,28 @@ note as SharedHelpers
   + validate_pair_name(name) : str
       used by CurrencyPair
   + validate_pair(pair) : CurrencyPair
-      used by TradeSetup, BacktestResult
+      used by TradeSetup, BacktestResult, Candle, SwingPoint, TimeframeAnalysis
   + to_price(value, label) : float
-      used by CurrencyPair, TradeSetup
+      used by CurrencyPair, TradeSetup, Account, to_positive_price
+  in tools/models/candle.py:
+  + validate_timeframe(timeframe) : Timeframe
+      used by Candle, SwingPoint, TimeframeAnalysis, TradePlan
+  + validate_time(time) : datetime
+      used by Candle, SwingPoint, StructureEvent
+  + to_positive_price(value, label) : float
+      used by Candle, SwingPoint, StructureEvent, Account, TradePlan, Trade
+  in tools/models/signal.py:
+  - _check_analysis(analysis, timeframe) : TimeframeAnalysis
+      used by Signal
+  Module constants: MAX_RISK_PERCENT = 2.0 (account.py),
+  MIN_REWARD_TO_RISK = 2 (trade_plan.py), UNITS_PER_LOT = 100_000 (order.py)
 end note
 
 note as ValidationRules
-  Validation rules (design decisions, not stated in requirements.md).
-  Each violation raises ValueError in __init__.
+  Validation rules. Each violation raises ValueError in __init__.
   Pair name: OANDA format AAA_BBB, two different currencies.
-  TradeSetup, BacktestResult: pair is a CurrencyPair.
+  TradeSetup, BacktestResult, Candle, SwingPoint, TimeframeAnalysis:
+    pair is a CurrencyPair.
   CurrencyPair: at least 2 (high, low) tuple points;
     prices finite numbers > 0; high >= low.
   TradeSetup: prices finite numbers > 0.
@@ -128,5 +352,27 @@ note as ValidationRules
   SellSetup: take profit < entry < stop loss (FR2).
   BacktestResult: test_date is a date; counts are whole numbers >= 0;
     win count <= trade count <= setups tested.
+  Candle: complete is True; timeframe is a Timeframe; time is a datetime;
+    prices finite numbers > 0; high >= low; low <= open <= high;
+    low <= close <= high; volume whole number >= 0 (FR6).
+  SwingPoint: label HH, HL, LH, or LL; price finite number > 0 (FR7).
+  BreakOfStructure: breaks HH (bullish) or LL (bearish).
+  ChangeOfCharacter: breaks LH (bullish) or HL (bearish).
+  StructureEvent: bullish close > swing price; bearish close < swing price.
+  TimeframeAnalysis: trend uptrend, downtrend, or ranging;
+    latest event is a StructureEvent or None, on the same CurrencyPair
+    object and Timeframe as the analysis.
+  Signal: m1, m5, h1, h4 are analyses on M1, M5, H1, H4 for the same
+    CurrencyPair object; min score whole number 1 to 4 (FR8).
+  Account: non-empty ID; balance > 0; currency AAA; environment
+    "practice" (FR5); 0 < risk percent <= 2 (FR9).
+  TradePlan: signal is valid; reward-to-risk to TP1, rounded to 2 decimals,
+    >= 2 (FR2); TP2 beyond TP1; lot size and risk amount > 0;
+    risk amount <= account max risk amount (FR9).
+  Order: account is the plan's account (same object) and practice;
+    confirmed is True (FR10).
+  Trade: outcome win, loss, or open; open has no exit price;
+    win or loss has an exit price > 0; a win has R multiple > 0
+    and a loss R multiple < 0 (FR11).
 end note
 @enduml
