@@ -1,5 +1,5 @@
 @startuml crc
-' Source: docs/design/requirements.md, section "CRC Analysis"
+' Source: docs/design/requirements.md, section "CRC Analysis" (generated from its tables)
 ' CRC cards only: no relationship arrows between cards.
 skinparam classAttributeIconSize 0
 hide circle
@@ -9,59 +9,75 @@ class CurrencyPair {
   Know its name (for example, EUR_USD)
   Know its past price data
   Know its current market structure
+  Know its pip size (0.01 for a JPY pair, 0.0001 otherwise)
+  Know its pip value per standard lot in USD at a price, and reject a cross pair (FR9)
+  Know its backtest results, add or remove one, and know its most recent (the one added last)
+  Accept only a backtest result for itself (the same object) that it does not already hold and that is not dated earlier than its most recent
   .. Collaborators ..
+  BacktestResult
 }
 
 class TradeSetup {
   .. Responsibilities ..
   Know which currency pair it belongs to
-  Know its direction, entry price, stop loss, and take profit
-  (direction comes from BuySetup or SellSetup)
-  Know its reward-to-risk ratio
-  Know its outcome (win, loss, or open) on its pair's price data
-  (FR3; computed by BuySetup or SellSetup)
+  Know its trade direction, and whether it is a buy or a sell
+  Know its entry price, stop loss, and take profit, in the price order its direction requires (FR2)
+  Know its reward, its risk, and its reward-to-risk ratio
+  Know its outcome (win, loss, or open) on its pair's price data (FR3)
   .. Collaborators ..
   CurrencyPair
+  TradeDirection
 }
 
-class BuySetup {
+class TradeDirection {
   .. Responsibilities ..
-  Know that its direction is buy
-  Require stop loss < entry < take profit
-  Know its reward (take profit − entry) and its risk (entry − stop loss)
-  Know its outcome: a win when a high reaches take profit,
-  a loss when a low reaches stop loss
+  Know whether it is buy or sell (kind comes from BuyDirection or SellDirection)
+  Check the price order of an entry, a stop loss, and a take profit
+  Know the reward and the risk for an entry, a stop loss, and a take profit
+  Know the outcome (win, loss, or open) of a stop loss and a take profit on price data
+  Know whether one price is beyond another in the trade's favor
+  Know its units sign
   .. Collaborators ..
 }
 
-class SellSetup {
+class BuyDirection {
   .. Responsibilities ..
-  Know that its direction is sell
+  Know that it is buy
+  Require stop loss < entry < take profit
+  Know the reward (take profit − entry) and the risk (entry − stop loss)
+  Know the outcome: a win when a high reaches take profit, a loss when a low reaches stop loss
+  Know that a price is beyond another when it is higher, and that its units sign is positive
+  .. Collaborators ..
+}
+
+class SellDirection {
+  .. Responsibilities ..
+  Know that it is sell
   Require take profit < entry < stop loss
-  Know its reward (entry − take profit) and its risk (stop loss − entry)
-  Know its outcome: a win when a low reaches take profit,
-  a loss when a high reaches stop loss
+  Know the reward (entry − take profit) and the risk (stop loss − entry)
+  Know the outcome: a win when a low reaches take profit, a loss when a high reaches stop loss
+  Know that a price is beyond another when it is lower, and that its units sign is negative
   .. Collaborators ..
 }
 
 class BacktestResult {
   .. Responsibilities ..
   Know which currency pair was tested
-  Know which trade setups were tested
-  Know its number of trades and its win rate
+  Know which trade setups were tested, and add or remove one
+  Accept only a trade setup on its own currency pair (the same object) that it does not already hold
+  Know its number of setups tested, trades, and wins from each setup's outcome; open setups are not trades (FR3)
+  Know its win rate: wins divided by trades
   Know when the test was run
-  Know the number of wins
   .. Collaborators ..
   CurrencyPair
-  TradeSetup (Phase 06)
+  TradeSetup
 }
 
 class Candle {
   .. Responsibilities ..
   Know its currency pair and timeframe
   Know its time, open, high, low, close, and volume
-  Reject an incomplete candle, a high below its low,
-  an open or close outside [low, high], and any price <= 0 (FR6)
+  Reject an incomplete candle, a high below its low, an open or close outside [low, high], and any price <= 0 (FR6)
   .. Collaborators ..
   CurrencyPair
   Timeframe
@@ -81,8 +97,7 @@ class StructureEvent {
   .. Responsibilities ..
   Know the swing point it broke
   Know the time and the close price of the break
-  Know its direction, bullish or bearish
-  (kind comes from BreakOfStructure or ChangeOfCharacter)
+  Know its direction, bullish or bearish (kind comes from BreakOfStructure or ChangeOfCharacter)
   Require the close to be beyond the swing point's price in its direction
   .. Collaborators ..
   SwingPoint
@@ -103,11 +118,9 @@ class ChangeOfCharacter {
 class TimeframeAnalysis {
   .. Responsibilities ..
   Know its currency pair and timeframe
-  Know its trend: uptrend, downtrend, or ranging
-  Know its most recent structure event, if any,
-  on its own currency pair and timeframe
-  Know its vote (bullish, bearish, or neutral) from its trend
-  and its most recent structure event (see Voting)
+  Know its trend: uptrend, downtrend, or ranging, as computed by the analysis tool from its swing labels (FR12)
+  Know its most recent structure event, if any, on its own currency pair and timeframe
+  Know its vote (bullish, bearish, or neutral) from its trend and its most recent structure event (see Voting)
   .. Collaborators ..
   CurrencyPair
   Timeframe
@@ -117,33 +130,35 @@ class TimeframeAnalysis {
 class Signal {
   .. Responsibilities ..
   Know its M1, M5, H1, and H4 analyses, all for the same currency pair
-  Know its direction: the majority of the bullish and bearish votes,
-  or no direction on a tie
-  Know its score: the number of timeframes voting its direction
-  (0 when it has no direction)
+  Know its direction: the majority of the bullish and bearish votes, or no direction on a tie
+  Know its score: the number of timeframes voting its direction (0 when it has no direction)
   Know its minimum confluence score, a whole number from 1 to 4 (default 3)
-  Know whether it is valid: it has a direction and its score
-  is at least the minimum (FR8)
-  Know its trade direction (bullish leads to buy, bearish leads to sell)
+  Know whether it is valid: it has a direction and its score is at least the minimum (FR8)
+  Know its trade direction: a BuyDirection when bullish, a SellDirection when bearish, none with no direction
+  Know its reference timeframe: the highest timeframe that voted with its direction, in the order H4, H1, M5, M1 (FR9)
   .. Collaborators ..
   TimeframeAnalysis
+  TradeDirection
+  Timeframe
 }
 
 class TradePlan {
   .. Responsibilities ..
   Know the valid signal it is based on
-  Own a trade setup with its entry, stop loss, and take profit (TP1),
-  in the signal's trade direction
-  Know its TP2, beyond TP1
-  Reject a reward-to-risk ratio (to TP1) below 2,
-  rounded to 2 decimals before comparing (FR2)
-  Know its lot size, its risk amount, and its reference timeframe
-  Require its risk amount not to exceed the account's
-  risk percent of its balance (FR9)
+  Own a trade setup with its entry, stop loss, and take profit (TP1), in the signal's trade direction
+  Know its TP2, beyond TP1 in its trade direction
+  Reject a reward-to-risk ratio (to TP1) below 2, rounded to 2 decimals before comparing (FR2)
+  Know its lot size and its stop-loss distance in pips
+  Know its risk amount: lot size × stop-loss pips × pip value per lot, rounded to cents (FR9)
+  Require its risk amount not to exceed the account's maximum risk amount (FR9)
+  Require a USD account and reject a cross pair (FR9)
+  Require a lot size of at least 0.01, in steps of 0.01 (FR9)
+  Know its reference timeframe from its signal (FR9)
   .. Collaborators ..
   Signal
   TradeSetup
-  Timeframe
+  TradeDirection
+  CurrencyPair
   Account
 }
 
@@ -153,32 +168,44 @@ class Account {
   Know its environment and reject any environment other than practice (FR5)
   Know its risk percent, greater than 0 and at most 2 (FR9)
   Know its maximum risk amount per trade
+  Know its trades, add or remove one, and know its open and its closed trades (FR11)
+  Accept only a trade whose order is for this account and has no recorded trade yet (one trade per order)
+  Replace an open trade it holds with the closed trade for the same order (FR11)
   .. Collaborators ..
+  Trade
+  Order
 }
 
 class Order {
   .. Responsibilities ..
   Know the trade plan it was created from
-  Know the account it is for, which must be its trade plan's account
-  and a practice account (FR10)
+  Know the account it is for, which must be its trade plan's account and a practice account (FR10)
   Know that its type is market
   Require the trader's explicit confirmation (FR10)
-  Know its units: lot size × 100,000, positive for a buy
-  and negative for a sell
+  Know its units: lot size × 100,000 times its direction's units sign (positive for a buy, negative for a sell)
   .. Collaborators ..
   TradePlan
   Account
+  TradeDirection
 }
 
 class Trade {
   .. Responsibilities ..
   Know the order that opened it
-  Know its outcome: win, loss, or open (FR11), where a win has
-  an R multiple above 0 and a loss an R multiple below 0
+  Know its outcome: win, loss, or open (FR11), where a win has an R multiple above 0 and a loss an R multiple below 0
   Know its exit price once closed
-  Know its R multiple (FR11): the price move from entry to exit
-  in its trade direction, divided by its setup's risk; none while open
+  Know its R multiple (FR11): the price move from entry to exit in its trade direction, divided by its setup's risk; none while open
   .. Collaborators ..
   Order
+  TradeDirection
+}
+
+class "rank_pairs (function)" as rank_pairs {
+  .. Responsibilities ..
+  Rank currency pairs by the win rate of each pair's most recent backtest result; pairs with no result or zero trades last; ties keep input order (FR4)
+  Reject a currency pair passed more than once
+  .. Collaborators ..
+  CurrencyPair
+  BacktestResult
 }
 @enduml

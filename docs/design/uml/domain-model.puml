@@ -1,114 +1,141 @@
 @startuml domain-model
 ' Sources: docs/design/requirements.md, sections "Domain Entities", "Values",
-' "Relationships and Multiplicities", "Inheritance", and "Interfaces", for the classes
-' and relationships.
-' tools/models/ (Phase 05) for the attributes, methods, object references, inheritance,
-' and abstract classes.
-' Attributes are private (-), or protected (#) when a subclass reads them, and are
-' exposed as read-only @property (+). No setters. Subclasses list only the members
-' they define or override; inherited members are not repeated.
+' "Relationships and Multiplicities", "Inheritance", "Interfaces", and
+' "Composition over Inheritance", for the classes and relationships.
+' tools/models/ (Phase 06) for the attributes, methods, object references, collections,
+' inheritance, and abstract classes.
+' Attributes are private (-) and exposed as read-only @property (+). No setters.
+' Subclasses list only the members they define or override; inherited members are not repeated.
 ' {abstract} marks an @abstractmethod. Abstract classes inherit from ABC.
+' Collections are private typed lists; their getters return tuples.
 skinparam classAttributeIconSize 0
 hide empty members
 
-' ---------- Phase 02-04 classes ----------
+' ---------- Currency pair, trade setups, and backtests ----------
 
 class CurrencyPair {
   - _name : str
   - _price_data : tuple[tuple[float, float], ...]
+  - _backtests : list[BacktestResult]
   + __init__(name : str, price_data)
   .. read-only properties ..
   + name : str
   + price_data : tuple[tuple[float, float], ...]
+  + backtests : tuple[BacktestResult, ...]
   .. methods ..
   + market_structure() : str
+  + pip_size() : float
+  + pip_value_per_lot(price : float) : float
+  - _holds(result : BacktestResult) : bool
+  + add_backtest(result : BacktestResult)
+  + remove_backtest(result : BacktestResult)
+  + latest_backtest() : BacktestResult | None
 }
 
-abstract class TradeSetup {
+class TradeSetup {
   - _pair : CurrencyPair
-  # _entry : float
-  # _stop_loss : float
-  # _take_profit : float
-  + __init__(pair : CurrencyPair, entry : float, stop_loss : float, take_profit : float)
-  # {abstract} _check_price_order()
+  - _direction : TradeDirection
+  - _entry : float
+  - _stop_loss : float
+  - _take_profit : float
+  + __init__(pair : CurrencyPair, direction : TradeDirection, entry : float, stop_loss : float, take_profit : float)
   .. read-only properties ..
   + pair : CurrencyPair
   + pair_name : str
-  + {abstract} direction : str
+  + trade_direction : TradeDirection
+  + direction : str
   + entry : float
   + stop_loss : float
   + take_profit : float
   .. methods ..
-  + {abstract} reward() : float
-  + {abstract} risk() : float
+  + reward() : float
+  + risk() : float
   + reward_to_risk() : float
-  + {abstract} outcome() : str
+  + outcome() : str
 }
 
 note right of TradeSetup
-  Abstract base class (ABC): a bare TradeSetup
-  cannot be created (TypeError).
-  Interface used polymorphically by the
-  module-level function in trade_setup.py:
+  Concrete class (Phase 06). Delegates the price-order check,
+  reward, risk, and outcome to its TradeDirection.
+  Used through its type by the module-level function
+  in trade_setup.py:
   + evaluate_setup(setup : TradeSetup) : str
-  outcome() returns "win", "loss", or "open" (FR3).
 end note
 
-class BuySetup {
-  + __init__(pair : CurrencyPair, entry : float, stop_loss : float, take_profit : float)
-  # _check_price_order()
+abstract class TradeDirection {
   .. read-only properties ..
-  + direction : str
+  + {abstract} name : str
+  + {abstract} units_sign : int
   .. methods ..
-  + reward() : float
-  + risk() : float
-  + outcome() : str
+  + {abstract} check_price_order(entry : float, stop_loss : float, take_profit : float)
+  + {abstract} reward(entry : float, take_profit : float) : float
+  + {abstract} risk(entry : float, stop_loss : float) : float
+  + {abstract} outcome(price_data, stop_loss : float, take_profit : float) : str
+  + {abstract} is_beyond(price : float, reference : float) : bool
 }
 
-class SellSetup {
-  + __init__(pair : CurrencyPair, entry : float, stop_loss : float, take_profit : float)
-  # _check_price_order()
+note right of TradeDirection
+  Interface (ABC): a bare TradeDirection
+  cannot be created (TypeError).
+  Holds no state.
+end note
+
+class BuyDirection {
   .. read-only properties ..
-  + direction : str
+  + name : str
+  + units_sign : int
   .. methods ..
-  + reward() : float
-  + risk() : float
-  + outcome() : str
+  + check_price_order(entry : float, stop_loss : float, take_profit : float)
+  + reward(entry : float, take_profit : float) : float
+  + risk(entry : float, stop_loss : float) : float
+  + outcome(price_data, stop_loss : float, take_profit : float) : str
+  + is_beyond(price : float, reference : float) : bool
 }
 
-TradeSetup <|-- BuySetup
-TradeSetup <|-- SellSetup
+class SellDirection {
+  .. read-only properties ..
+  + name : str
+  + units_sign : int
+  .. methods ..
+  + check_price_order(entry : float, stop_loss : float, take_profit : float)
+  + reward(entry : float, take_profit : float) : float
+  + risk(entry : float, stop_loss : float) : float
+  + outcome(price_data, stop_loss : float, take_profit : float) : str
+  + is_beyond(price : float, reference : float) : bool
+}
+
+TradeDirection <|-- BuyDirection
+TradeDirection <|-- SellDirection
 
 class BacktestResult {
   - _pair : CurrencyPair
   - _test_date : date
-  - _setups_tested : int
-  - _trade_count : int
-  - _win_count : int
-  + __init__(pair : CurrencyPair, test_date : date, setups_tested : int, trade_count : int, win_count : int)
+  - _setups : list[TradeSetup]
+  + __init__(pair : CurrencyPair, test_date : date)
   .. read-only properties ..
   + pair : CurrencyPair
   + pair_name : str
   + test_date : date
+  + setups : tuple[TradeSetup, ...]
   + setups_tested : int
   + trade_count : int
   + win_count : int
   .. methods ..
+  - _holds(setup : TradeSetup) : bool
+  + add_setup(setup : TradeSetup)
+  + remove_setup(setup : TradeSetup)
   + win_rate() : float | None
 }
 
 CurrencyPair "1" <-- "0..*" TradeSetup : has >
-CurrencyPair "1" <-- "0..*" BacktestResult : has >
-BacktestResult "0..1" o-- "0..*" TradeSetup : is based on >
+CurrencyPair "1" -- "0..*" BacktestResult : has >
+BacktestResult "0..1" o--> "0..*" TradeSetup : is based on >
+TradeSetup "0..*" --> "1" TradeDirection : follows the rules of >
 
-note on link
-  planned, not yet implemented (Phase 06)
-end note
-
-note "All trade setups in a backtest result must belong\nto the same currency pair as that backtest result." as SamePair
+note "All trade setups in a backtest result must belong\nto the same currency pair (same object) as that backtest result.\nA trade setup belongs to at most one backtest result:\ndocumented only, not enforced." as SamePair
 SamePair .. BacktestResult
 
-' ---------- Phase 05 domain expansion ----------
+' ---------- Market data and structure ----------
 
 enum Timeframe {
   M1
@@ -221,8 +248,11 @@ class Signal {
   + direction() : str | None
   + score() : int
   + is_valid() : bool
-  + trade_direction() : str | None
+  + trade_direction() : TradeDirection | None
+  + reference_timeframe() : Timeframe | None
 }
+
+' ---------- Plans, orders, trades, and the account ----------
 
 class Account {
   - _account_id : str
@@ -230,6 +260,7 @@ class Account {
   - _currency : str
   - _environment : str
   - _risk_percent : float
+  - _trades : list[Trade]
   + __init__(account_id : str, balance : float, currency : str, environment : str, risk_percent : float)
   .. read-only properties ..
   + account_id : str
@@ -237,8 +268,16 @@ class Account {
   + currency : str
   + environment : str
   + risk_percent : float
+  + trades : tuple[Trade, ...]
   .. methods ..
   + max_risk_amount() : float
+  - _holds(trade : Trade) : bool
+  - _check_new_trade(trade : Trade, replacing : Trade | None = None)
+  + add_trade(trade : Trade)
+  + remove_trade(trade : Trade)
+  + close_trade(open_trade : Trade, closed_trade : Trade)
+  + open_trades() : tuple[Trade, ...]
+  + closed_trades() : tuple[Trade, ...]
 }
 
 class TradePlan {
@@ -248,22 +287,23 @@ class TradePlan {
   - _take_profit_2 : float
   - _lot_size : float
   - _risk_amount : float
-  - _reference_timeframe : Timeframe
-  + __init__(signal : Signal, account : Account, entry : float, stop_loss : float, take_profit_1 : float, take_profit_2 : float, lot_size : float, risk_amount : float, reference_timeframe : Timeframe)
+  + __init__(signal : Signal, account : Account, entry : float, stop_loss : float, take_profit_1 : float, take_profit_2 : float, lot_size : float)
   .. read-only properties ..
   + signal : Signal
   + account : Account
   + setup : TradeSetup
   + take_profit_2 : float
   + lot_size : float
+  + stop_loss_pips : float
   + risk_amount : float
-  + reference_timeframe : Timeframe
+  + reference_timeframe : Timeframe | None
 }
 
 note right of TradePlan
-  Creates its own BuySetup or SellSetup from
-  signal.trade_direction(), signal.pair, entry,
-  stop_loss, and take_profit_1 (composition).
+  Creates its own TradeSetup with signal.trade_direction(),
+  signal.pair, entry, stop_loss, and take_profit_1 (composition).
+  risk_amount = lot_size × stop_loss_pips × pair.pip_value_per_lot(entry),
+  rounded to cents, computed in __init__. reference_timeframe comes from the signal.
 end note
 
 class Order {
@@ -296,39 +336,50 @@ CurrencyPair "1" <-- "0..*" SwingPoint : has >
 CurrencyPair "1" <-- "0..*" TimeframeAnalysis : has >
 StructureEvent "0..1" --> "1" SwingPoint : breaks >
 TimeframeAnalysis "0..*" --> "0..1" StructureEvent : knows its most recent >
-Signal "0..*" o--> "4" TimeframeAnalysis : combines (m1, m5, h1, h4) >
+Signal "0..*" o--> "4" TimeframeAnalysis : combines (as m1, m5, h1, h4) >
 TradePlan "0..1" --> "1" Signal : is based on >
 TradePlan "1" *--> "1" TradeSetup : owns >
 TradePlan "0..*" --> "1" Account : is sized for >
 Order "0..1" --> "1" TradePlan : is created from >
 Order "0..*" --> "1" Account : is for >
 Trade "0..1" --> "1" Order : is opened by >
+Account "1" o--> "0..*" Trade : records >
 
 ' ---------- Notes ----------
 
 note as AssociationLinks
-  All associations are one-way object references in the arrow direction.
-  CurrencyPair holds no references back to its setups, results, candles,
-  swing points, or analyses. An Account holds no references to its orders
-  or trades. Signal holds four named references, not a collection.
-  One-to-many collections: planned, not yet implemented (Phase 06).
+  Arrows are one-way object references in the arrow direction.
+  CurrencyPair -- BacktestResult is two-way: each result holds its pair,
+  and the pair holds its results in a private list (FR4).
+  Collections (private typed lists, getters return tuples):
+  BacktestResult._setups, CurrencyPair._backtests, Account._trades.
+  Deliberately one-way: CurrencyPair to TradeSetup, Candle, SwingPoint,
+  and TimeframeAnalysis; Account to Order and TradePlan.
+  Signal holds four named references, not a collection.
   Timeframe is an enumeration value held by Candle, SwingPoint,
-  TimeframeAnalysis, and TradePlan.
+  and TimeframeAnalysis, and returned by Signal and TradePlan.
 end note
 AssociationLinks .. CurrencyPair
 
 note as SharedHelpers
-  Shared helper functions (module-level, not classes)
+  Module-level functions (not classes)
   in tools/models/currency_pair.py:
   + validate_pair_name(name) : str
       used by CurrencyPair
   + validate_pair(pair) : CurrencyPair
-      used by TradeSetup, BacktestResult, Candle, SwingPoint, TimeframeAnalysis
+      used by TradeSetup, BacktestResult, Candle, SwingPoint,
+      TimeframeAnalysis, rank_pairs
   + to_price(value, label) : float
       used by CurrencyPair, TradeSetup, Account, to_positive_price
+  + rank_pairs(pairs : list[CurrencyPair]) : list[CurrencyPair]
+      FR4 ranking by the most recent backtest's win rate
+  - _ranked_win_rate(pair) : float | None
+      used by rank_pairs
+  in tools/models/trade_setup.py:
+  + evaluate_setup(setup : TradeSetup) : str
   in tools/models/candle.py:
   + validate_timeframe(timeframe) : Timeframe
-      used by Candle, SwingPoint, TimeframeAnalysis, TradePlan
+      used by Candle, SwingPoint, TimeframeAnalysis
   + validate_time(time) : datetime
       used by Candle, SwingPoint, StructureEvent
   + to_positive_price(value, label) : float
@@ -336,22 +387,29 @@ note as SharedHelpers
   in tools/models/signal.py:
   - _check_analysis(analysis, timeframe) : TimeframeAnalysis
       used by Signal
-  Module constants: MAX_RISK_PERCENT = 2.0 (account.py),
-  MIN_REWARD_TO_RISK = 2 (trade_plan.py), UNITS_PER_LOT = 100_000 (order.py)
+  Module constants: _USD_QUOTE_PAIRS, _USD_BASE_PAIRS (currency_pair.py),
+  MAX_RISK_PERCENT = 2.0 (account.py), MIN_REWARD_TO_RISK = 2 and LOT_STEP = 0.01 (trade_plan.py),
+  UNITS_PER_LOT = 100_000 (order.py)
 end note
 
 note as ValidationRules
-  Validation rules. Each violation raises ValueError in __init__.
+  Validation rules. Each violation raises ValueError.
   Pair name: OANDA format AAA_BBB, two different currencies.
   TradeSetup, BacktestResult, Candle, SwingPoint, TimeframeAnalysis:
     pair is a CurrencyPair.
   CurrencyPair: at least 2 (high, low) tuple points;
     prices finite numbers > 0; high >= low.
-  TradeSetup: prices finite numbers > 0.
-  BuySetup: stop loss < entry < take profit (FR2).
-  SellSetup: take profit < entry < stop loss (FR2).
-  BacktestResult: test_date is a date; counts are whole numbers >= 0;
-    win count <= trade count <= setups tested.
+  CurrencyPair.pip_value_per_lot: price finite number > 0;
+    cross pair rejected (FR9).
+  CurrencyPair.add_backtest: a BacktestResult for this pair (same object),
+    not already held, not dated earlier than the latest. remove_backtest: must be held.
+  rank_pairs: each item a CurrencyPair; no pair (same object) twice.
+  TradeSetup: direction is a TradeDirection; prices finite numbers > 0.
+  BuyDirection: stop loss < entry < take profit (FR2).
+  SellDirection: take profit < entry < stop loss (FR2).
+  BacktestResult: test_date is a date.
+  BacktestResult.add_setup: a TradeSetup on the same pair (same object),
+    not already held. remove_setup: must be held.
   Candle: complete is True; timeframe is a Timeframe; time is a datetime;
     prices finite numbers > 0; high >= low; low <= open <= high;
     low <= close <= high; volume whole number >= 0 (FR6).
@@ -366,9 +424,14 @@ note as ValidationRules
     CurrencyPair object; min score whole number 1 to 4 (FR8).
   Account: non-empty ID; balance > 0; currency AAA; environment
     "practice" (FR5); 0 < risk percent <= 2 (FR9).
-  TradePlan: signal is valid; reward-to-risk to TP1, rounded to 2 decimals,
-    >= 2 (FR2); TP2 beyond TP1; lot size and risk amount > 0;
-    risk amount <= account max risk amount (FR9).
+  Account.add_trade: a Trade whose order is for this account (same object),
+    not already held, and no other trade recorded for that order.
+    remove_trade: must be held. close_trade: open trade held and open;
+    closed trade a win or loss for the same order, not held.
+  TradePlan: signal is valid; USD account; reward-to-risk to TP1, rounded
+    to 2 decimals, >= 2 (FR2); TP2 beyond TP1; lot size >= 0.01 in steps of 0.01;
+    pair has a pip value (no cross pair); risk amount, rounded to cents,
+    <= account max risk amount (FR9).
   Order: account is the plan's account (same object) and practice;
     confirmed is True (FR10).
   Trade: outcome win, loss, or open; open has no exit price;

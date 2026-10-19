@@ -1,5 +1,7 @@
 """Signal: a confluence result across four timeframes (Phase 05 entity)."""
 
+from tools.models.buy_direction import BuyDirection
+from tools.models.sell_direction import SellDirection
 from tools.models.timeframe import Timeframe
 from tools.models.timeframe_analysis import TimeframeAnalysis
 
@@ -73,8 +75,17 @@ class Signal:
         return self.direction() is not None and self.score() >= self._min_score
 
     def trade_direction(self):
-        """Return "buy" for bullish, "sell" for bearish, or None with no direction."""
+        """Return a BuyDirection when bullish, a SellDirection when bearish, or None with no direction."""
         direction = self.direction()
         if direction is None:
             return None
-        return "buy" if direction == "bullish" else "sell"
+        return BuyDirection() if direction == "bullish" else SellDirection()
+
+    def reference_timeframe(self):
+        """Return the highest timeframe that voted with this signal's direction (H4, H1, M5, M1), or None (FR9)."""
+        direction = self.direction()
+        if direction is None:
+            return None
+        for analysis in (self._h4, self._h1, self._m5, self._m1):
+            if analysis.vote() == direction:
+                return analysis.timeframe

@@ -3,7 +3,7 @@
 import pytest
 
 from tests.models.conftest import make_signal
-from tools.models import CurrencyPair, Signal, Timeframe, TimeframeAnalysis
+from tools.models import BuyDirection, CurrencyPair, SellDirection, Signal, Timeframe, TimeframeAnalysis
 
 UP, DOWN, RANGE = "uptrend", "downtrend", "ranging"
 
@@ -44,11 +44,30 @@ def test_minimum_score_must_be_whole_number_from_1_to_4(min_score, eur_usd):
         make_signal(eur_usd, UP, UP, UP, UP, min_score=min_score)
 
 
-@pytest.mark.parametrize("trends, trade_direction", [
-    ((UP, UP, UP, UP), "buy"), ((DOWN, DOWN, DOWN, DOWN), "sell"), ((UP, UP, DOWN, DOWN), None),
+@pytest.mark.parametrize("trends, direction_class", [
+    ((UP, UP, UP, UP), BuyDirection), ((DOWN, DOWN, DOWN, DOWN), SellDirection),
 ])
-def test_trade_direction_maps_bullish_to_buy(trends, trade_direction, eur_usd):
-    assert make_signal(eur_usd, *trends).trade_direction() == trade_direction
+def test_trade_direction_maps_bullish_to_buy(trends, direction_class, eur_usd):
+    assert isinstance(make_signal(eur_usd, *trends).trade_direction(), direction_class)
+
+
+def test_trade_direction_is_none_without_a_direction(eur_usd):
+    assert make_signal(eur_usd, UP, UP, DOWN, DOWN).trade_direction() is None
+
+
+@pytest.mark.parametrize("trends, reference", [
+    ((UP, UP, UP, UP), Timeframe.H4),
+    ((UP, UP, UP, RANGE), Timeframe.H1),
+    ((UP, UP, DOWN, DOWN), None),
+    ((DOWN, UP, UP, UP), Timeframe.H4),
+    ((UP, UP, DOWN, RANGE), Timeframe.M5),  # H4 neutral, H1 disagrees
+    ((DOWN, DOWN, UP, UP), None),
+    ((UP, UP, RANGE, RANGE), Timeframe.M5),
+    ((UP, RANGE, RANGE, RANGE), Timeframe.M1),
+    ((DOWN, DOWN, DOWN, UP), Timeframe.H1),
+])
+def test_reference_timeframe_is_the_highest_agreeing_timeframe(trends, reference, eur_usd):
+    assert make_signal(eur_usd, *trends, min_score=1).reference_timeframe() is reference
 
 
 def test_signal_holds_its_four_named_analyses(eur_usd):

@@ -4,7 +4,7 @@
 
 | Entity | Description |
 |---|---|
-| **CurrencyPair** | A forex market NEXUS analyzes, such as EUR_USD, together with its past price data and its current market structure. |
+| **CurrencyPair** | A forex market NEXUS analyzes, such as EUR_USD, together with its past price data, its current market structure, its pip size and pip value, and its backtest results. |
 | **TradeSetup** | A suggested trade on one currency pair, with a direction, an entry price, a stop loss, and a take profit. Its direction rules come from its TradeDirection. |
 | **TradeDirection** | The rules that differ between buying and selling: price order, reward, risk, outcome, which price is beyond another, and the units sign. Its kind comes from BuyDirection or SellDirection. |
 | **BuyDirection** | The buy rules: stop loss < entry < take profit, and higher prices are in the trade's favor. |
@@ -17,8 +17,8 @@
 | **ChangeOfCharacter** | A structure event that breaks a swing point against the trend: a close above an LH (bullish) or below an HL (bearish). |
 | **TimeframeAnalysis** | The analysis of one currency pair on one timeframe: its trend, its most recent structure event, and the vote it casts. |
 | **Signal** | A confluence result for one currency pair, combining the votes of its M1, M5, H1, and H4 analyses into a direction and a score. |
-| **TradePlan** | The plan for a valid signal: a trade setup plus a second take profit, a lot size, a risk amount, and a reference timeframe. |
-| **Account** | The OANDA practice account a trade plan is sized for, with its balance, currency, environment, and risk percent. |
+| **TradePlan** | The plan for a valid signal: a trade setup plus a second take profit and a lot size. Its risk amount comes from its lot size, and its reference timeframe comes from its signal. |
+| **Account** | The OANDA practice account a trade plan is sized for, with its balance, currency, environment, and risk percent, and the trades it records. |
 | **Order** | A market order created from a trade plan for a practice account, after the trader's explicit confirmation. |
 | **Trade** | A position opened by an order, with its outcome (win, loss, or open) and its R multiple. |
 
@@ -52,9 +52,10 @@
 | FR6 | NEXUS shall represent complete OHLC candles on M1, M5, H1, and H4, rejecting incomplete candles and any candle with high < low, open or close outside [low, high], or a price <= 0. | UC1 |
 | FR7 | NEXUS shall identify swing highs and lows labeled HH/HL/LH/LL, and detect a BOS (a break with the trend) and a CHoCH (a break against the trend). | UC1 |
 | FR8 | NEXUS shall flag a signal only when at least the minimum confluence score (default 3) of the 4 timeframes vote the same direction. | UC5 |
-| FR9 | For a valid signal, NEXUS shall produce a trade plan with entry, stop loss, TP1, TP2, and a lot size whose risk never exceeds the account's risk percent, capped at 2%. | UC2 |
+| FR9 | For a valid signal, NEXUS shall produce a trade plan with entry, stop loss, TP1, TP2, a lot size, and a reference timeframe. The reference timeframe is the highest timeframe that voted with the signal's direction, in the order H4, H1, M5, M1. The plan's risk is lot size × stop-loss distance in pips × pip value per lot, and it shall never exceed the account's risk percent of its balance, capped at 2%. A plan is produced only for a USD account and only for a USD-quote or USD-base currency pair; cross pairs are rejected until a real conversion exists. | UC2 |
 | FR10 | NEXUS shall create only market orders, only for a practice account, and only after the trader's explicit confirmation. | UC6 |
 | FR11 | NEXUS shall record each trade with its outcome (win, loss, or open) and its R multiple. | UC7 |
+| FR12 | NEXUS shall take each timeframe's trend (uptrend, downtrend, or ranging) from that timeframe's swing labels, as computed by the analysis tool (`tools/analysis/detect_trend.py`). This is separate from a currency pair's market structure in FR1. | UC1 |
 
 ## Vocabularies
 
@@ -91,17 +92,42 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 - A TradePlan rejects a setup whose reward-to-risk ratio to TP1, rounded to 2 decimals, is below 2.
 - This closes Phase 02 decision D5 (FR2's minimum reward-to-risk of 2). TradeSetup itself still does not enforce the minimum; TradePlan does.
 
+## Pip Size and Pip Value
+
+From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_size.py`.
+
+| Rule | Value |
+|---|---|
+| Pip size | 0.01 for a pair containing JPY, 0.0001 otherwise |
+| Pip value per standard lot (USD), USD-quote pairs (EUR_USD, GBP_USD, AUD_USD, NZD_USD) | 10.0 |
+| Pip value per standard lot (USD), USD_JPY | 1,000 / price, rounded to 4 decimals |
+| Pip value per standard lot (USD), other USD-base pairs (USD_CHF, USD_CAD, USD_SGD) | 10 / price, rounded to 4 decimals |
+| Any other pair (cross pair) | Rejected: no pip value until a real conversion exists |
+
+- A TradePlan's lot size is at least 0.01, in steps of 0.01.
+- A TradePlan's stop-loss distance in pips is its setup's risk divided by its pair's pip size, rounded to 1 decimal (as in `calculate_sl_tp.py`).
+- A TradePlan's risk amount is lot size × stop-loss pips × pip value per lot at its entry price, rounded to cents (2 decimals). It must be at most the account's maximum risk amount. Rounding to cents keeps floating-point noise from rejecting an exactly-at-limit plan; a risk one cent or more over the maximum is rejected.
+
+## Ranking
+
+- FR4 ranks currency pairs by the win rate of each pair's most recent backtest result, the one added last. A currency pair rejects a backtest result dated earlier than its most recent one, so the one added last is never older than the others. Pairs with no backtest result, or whose most recent result has zero trades, are ranked last.
+- Pairs with equal win rates, and the pairs ranked last, keep their input order.
+- A currency pair passed to the ranking more than once (the same object) is rejected.
+
 ## Known Conflicts
 
 | Conflict | Files | Decision |
 |---|---|---|
-| FR1 identifies market structure from every price point (each point must make a higher high and higher low). `detect_trend.py` counts the last 6 swing labels (at least 4 aligned means a trend) and returns bullish, bearish, or ranging. | `requirements.md` FR1, `tools/analysis/detect_trend.py` | FR1 stays as written. Resolve in Phase 06. |
+| FR4 ranks pairs by win rate. `_rank_and_select_pairs` scores pairs by 40% win rate, 40% total R, and 20% profit factor, skips pairs with fewer than 3 trades, and keeps the top 8. | `requirements.md` FR4, `tools/scheduler/weekly_cycle.py` | FR4 is implemented as written in `tools/models/`. The tool is not changed. |
+| `calculate_lot_size` rounds the lot size to the nearest 0.01, which can round up past the account's maximum risk. TradePlan rejects any plan whose risk, rounded to cents, exceeds the maximum. | `requirements.md` FR9, `tools/trade_plan/calculate_lot_size.py` | TradePlan stays strict. The tool should round the lot size down, as a separate fix after Phase 06. |
+
+- The Phase 05 conflict between FR1 and `detect_trend.py` was resolved in Phase 06 by FR12: FR1 is a currency pair's market structure, and a timeframe's trend comes from its swing labels.
 
 ## Model Rules
 
 - Domain classes in `tools/models/` hold data and check rules only. They never call the OANDA API or the Claude API.
 - Demos and tests use fake account IDs only.
-- One-to-many relationships are stored as typed collections from Phase 06. BacktestResult stores its trade setups in a private list. The other one-to-many relationships are still not stored (see Relationships and Multiplicities).
+- One-to-many relationships that a requirement needs navigated from the "one" side are stored as typed private lists from Phase 06: BacktestResult → TradeSetup, CurrencyPair → BacktestResult (FR4), and Account → Trade (FR11). The others are deliberately one-way (see Relationships and Multiplicities).
 
 ## CRC Analysis
 
@@ -114,6 +140,10 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 | Know its name (for example, EUR_USD) | |
 | Know its past price data | |
 | Know its current market structure | |
+| Know its pip size (0.01 for a JPY pair, 0.0001 otherwise) | |
+| Know its pip value per standard lot in USD at a price, and reject a cross pair (FR9) | |
+| Know its backtest results, add or remove one, and know its most recent (the one added last) | BacktestResult |
+| Accept only a backtest result for itself (the same object) that it does not already hold and that is not dated earlier than its most recent | BacktestResult |
 
 ### TradeSetup
 
@@ -209,7 +239,7 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 | Responsibilities | Collaborators |
 |---|---|
 | Know its currency pair and timeframe | CurrencyPair, Timeframe |
-| Know its trend: uptrend, downtrend, or ranging | |
+| Know its trend: uptrend, downtrend, or ranging, as computed by the analysis tool from its swing labels (FR12) | |
 | Know its most recent structure event, if any, on its own currency pair and timeframe | StructureEvent |
 | Know its vote (bullish, bearish, or neutral) from its trend and its most recent structure event (see Voting) | |
 
@@ -222,18 +252,23 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 | Know its score: the number of timeframes voting its direction (0 when it has no direction) | |
 | Know its minimum confluence score, a whole number from 1 to 4 (default 3) | |
 | Know whether it is valid: it has a direction and its score is at least the minimum (FR8) | |
-| Know its trade direction (bullish leads to buy, bearish leads to sell) | |
+| Know its trade direction: a BuyDirection when bullish, a SellDirection when bearish, none with no direction | TradeDirection |
+| Know its reference timeframe: the highest timeframe that voted with its direction, in the order H4, H1, M5, M1 (FR9) | Timeframe |
 
 ### TradePlan
 
 | Responsibilities | Collaborators |
 |---|---|
 | Know the valid signal it is based on | Signal |
-| Own a trade setup with its entry, stop loss, and take profit (TP1), in the signal's trade direction | TradeSetup |
+| Own a trade setup with its entry, stop loss, and take profit (TP1), in the signal's trade direction | TradeSetup, TradeDirection |
 | Know its TP2, beyond TP1 in its trade direction | TradeDirection |
 | Reject a reward-to-risk ratio (to TP1) below 2, rounded to 2 decimals before comparing (FR2) | |
-| Know its lot size, its risk amount, and its reference timeframe | Timeframe |
-| Require its risk amount not to exceed the account's risk percent of its balance (FR9) | Account |
+| Know its lot size and its stop-loss distance in pips | CurrencyPair |
+| Know its risk amount: lot size × stop-loss pips × pip value per lot, rounded to cents (FR9) | CurrencyPair |
+| Require its risk amount not to exceed the account's maximum risk amount (FR9) | Account |
+| Require a USD account and reject a cross pair (FR9) | Account, CurrencyPair |
+| Require a lot size of at least 0.01, in steps of 0.01 (FR9) | |
+| Know its reference timeframe from its signal (FR9) | Signal |
 
 ### Account
 
@@ -243,6 +278,9 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 | Know its environment and reject any environment other than practice (FR5) | |
 | Know its risk percent, greater than 0 and at most 2 (FR9) | |
 | Know its maximum risk amount per trade | |
+| Know its trades, add or remove one, and know its open and its closed trades (FR11) | Trade |
+| Accept only a trade whose order is for this account and has no recorded trade yet (one trade per order) | Trade, Order |
+| Replace an open trade it holds with the closed trade for the same order (FR11) | Trade |
 
 ### Order
 
@@ -262,6 +300,13 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 | Know its outcome: win, loss, or open (FR11), where a win has an R multiple above 0 and a loss an R multiple below 0 | |
 | Know its exit price once closed | |
 | Know its R multiple (FR11): the price move from entry to exit in its trade direction, divided by its setup's risk; none while open | TradeDirection |
+
+### rank_pairs (function)
+
+| Responsibilities | Collaborators |
+|---|---|
+| Rank currency pairs by the win rate of each pair's most recent backtest result; pairs with no result or zero trades last; ties keep input order (FR4) | CurrencyPair, BacktestResult |
+| Reject a currency pair passed more than once | CurrencyPair |
 
 ## Relationships and Multiplicities
 
@@ -283,18 +328,20 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 | Order | is created from | TradePlan | `0..1` to `1` | Association |
 | Order | is for | Account | `0..*` to `1` | Association |
 | Trade | is opened by | Order | `0..1` to `1` | Association |
+| Account | records | Trade | `1` to `0..*` | Aggregation |
 
 - Each trade setup belongs to exactly one currency pair. A pair can have no setups.
 - Each backtest result belongs to exactly one currency pair. A pair can have no backtest results yet.
 - A backtest result is based on zero or more trade setups, since a test may find none. A trade setup belongs to at most one backtest result, because a live suggestion is not part of any backtest.
 - All trade setups in a backtest result must belong to the same currency pair as that backtest result.
-- The two CurrencyPair associations are one-way: each TradeSetup and each BacktestResult holds a reference to its CurrencyPair, and a CurrencyPair holds no references to its setups or results.
+- Each TradeSetup and each BacktestResult holds a reference to its CurrencyPair. The CurrencyPair–BacktestResult association is two-way from Phase 06: a CurrencyPair holds its backtest results in a private list (FR4). It accepts a result only if the result's currency pair is the same object as itself, it does not already hold that result, and the result is not dated earlier than its most recent one. The CurrencyPair–TradeSetup association stays one-way.
 - A BacktestResult holds its trade setups in a private list. It accepts a setup only if the setup's currency pair is the same object as its own and it does not already hold that setup. It returns the setups as a tuple.
 - That a trade setup belongs to at most one backtest result is documented only. It is not enforced, because a setup holds no reference to its backtest results.
-- Candle, SwingPoint, and TimeframeAnalysis each hold a one-way reference to their CurrencyPair. A CurrencyPair holds no references to them until Phase 06.
+- Candle, SwingPoint, and TimeframeAnalysis each hold a one-way reference to their CurrencyPair. They stay deliberately one-way, because no requirement needs a currency pair to navigate to them.
 - A Signal holds four named references to TimeframeAnalysis objects, m1, m5, h1, and h4, not a collection.
 - A TradePlan creates and owns its TradeSetup. The setup does not exist without the plan.
-- An Account has zero or more Trades through its Orders. That collection waits for Phase 06.
+- An Account records its trades in a private list (FR11). It accepts a trade only if the trade's order is for this account (the same object) and it records no trade for that order yet, so each order has at most one recorded trade. Because a Trade cannot change, an open trade is closed by replacing it with the closed Trade for the same order; that is the only way to replace a recorded trade.
+- Order → Account and TradePlan → Account stay deliberately one-way. An Account reaches its orders through its trades.
 
 ## Inheritance
 

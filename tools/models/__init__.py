@@ -6,7 +6,7 @@ from tools.models.break_of_structure import BreakOfStructure
 from tools.models.buy_direction import BuyDirection
 from tools.models.candle import Candle
 from tools.models.change_of_character import ChangeOfCharacter
-from tools.models.currency_pair import CurrencyPair
+from tools.models.currency_pair import CurrencyPair, rank_pairs
 from tools.models.order import Order
 from tools.models.sell_direction import SellDirection
 from tools.models.signal import Signal
@@ -22,5 +22,5 @@ from tools.models.trade_setup import TradeSetup, evaluate_setup
 __all__ = [
     "Account", "BacktestResult", "BreakOfStructure", "BuyDirection", "Candle", "ChangeOfCharacter",
     "CurrencyPair", "Order", "SellDirection", "Signal", "StructureEvent", "SwingPoint", "Timeframe",
-    "TimeframeAnalysis", "Trade", "TradeDirection", "TradePlan", "TradeSetup", "evaluate_setup",
+    "TimeframeAnalysis", "Trade", "TradeDirection", "TradePlan", "TradeSetup", "evaluate_setup", "rank_pairs",
 ]
