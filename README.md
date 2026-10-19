@@ -53,16 +53,24 @@ A weekly scheduler runs live monitoring on weekdays and backtesting on weekends.
 
 | Class | Responsibility |
 |---|---|
-| `Instrument` | A currency pair, such as EUR_USD |
-| `Candle` | One OHLC bar with time and timeframe |
-| `Chart` | A series of candles for one instrument and timeframe |
+| `CurrencyPair` | A currency pair, such as EUR_USD, with its past (high, low) price data and market structure |
+| `Timeframe` | M1, M5, H1, or H4 (an enumeration value) |
+| `Candle` | One complete OHLC bar for a currency pair on one timeframe, with time and volume |
 | `SwingPoint` | A swing high or low, labeled HH/HL/LH/LL |
-| `StructureEvent` | A BOS or CHoCH |
-| `Signal` | A detected setup with direction and confluence score |
-| `TradePlan` | Entry, SL, TP, R:R, and position size |
-| `Order` | An order sent to the broker (market, limit, or stop) |
-| `Trade` | An open or closed position |
-| `Account` | Balance, risk %, and trades |
+| `StructureEvent` | A close beyond a swing point, bullish or bearish (abstract) |
+| `BreakOfStructure` | A structure event with the trend (BOS) |
+| `ChangeOfCharacter` | A structure event against the trend (CHoCH) |
+| `TimeframeAnalysis` | One timeframe's trend, most recent structure event, and vote |
+| `Signal` | The M1, M5, H1, and H4 votes combined into a direction and a confluence score |
+| `TradeSetup` | Entry, stop loss, and take profit on one currency pair, with reward, risk, and outcome (abstract) |
+| `BuySetup` | A trade setup that buys |
+| `SellSetup` | A trade setup that sells |
+| `TradePlan` | A trade setup plus TP2, lot size, risk amount, and reference timeframe for a valid signal |
+| `Account` | A practice account's balance, currency, and risk % |
+| `Order` | A confirmed market order for a practice account |
+| `Trade` | An open or closed position with its outcome and R multiple |
+| `BacktestResult` | The trades, wins, and win rate of a backtest on one currency pair |
+| `Chart` | A series of candles for one currency pair and timeframe (planned, Phase 06) |
 
 Domain classes live in `tools/models/`. Design diagrams live in `docs/design/`.
 
@@ -70,15 +78,17 @@ Domain classes live in `tools/models/`. Design diagrams live in `docs/design/`.
 
 ## Design Highlights
 
-| Concept | Where it is used |
-|---|---|
-| Inheritance | `Order` → `MarketOrder`, `LimitOrder`, `StopOrder` |
-| Interfaces & polymorphism | `Strategy` abstract base class → `FvgStrategy`, `BosStrategy`, `OrderBlockStrategy` |
-| Factory | `OrderFactory` creates the right order type |
-| Builder | `TradePlanBuilder` assembles entry, SL, TP, and size step by step |
-| Adapter | `OandaAdapter` implements a `BrokerGateway` interface, so a `FakeBroker` can be swapped in for tests |
-| Facade | `TradingFacade` exposes one simple call for the whole pipeline |
-| MVC | Model = domain classes, View = React Native app, Controller = FastAPI routes |
+| Concept | Where it is used | Status |
+|---|---|---|
+| Inheritance | `TradeSetup` → `BuySetup`, `SellSetup`; `StructureEvent` → `BreakOfStructure`, `ChangeOfCharacter` | Implemented (Phases 04–05) |
+| Interfaces & polymorphism | `TradeSetup` abstract base class: `outcome()` is implemented by `BuySetup` and `SellSetup` and used through `evaluate_setup(setup: TradeSetup)` | Implemented (Phase 05) |
+| Composition | `TradePlan` creates and owns its `TradeSetup` | Implemented (Phase 05) |
+| Orders | `Order` supports market orders only, on a practice account, after explicit confirmation | Implemented (Phase 05) |
+| Factory | `OrderFactory` creates orders | Planned (Phase 08) |
+| Builder | `TradePlanBuilder` assembles entry, SL, TP, and size step by step | Planned (Phase 08) |
+| Adapter | `OandaAdapter` implements a `BrokerGateway` interface, so a `FakeBroker` can be swapped in for tests | Planned (Phase 09) |
+| Facade | `TradingFacade` exposes one simple call for the whole pipeline | Planned (Phase 09) |
+| MVC | Model = domain classes, View = React Native app, Controller = FastAPI routes | Planned (Phase 11) |
 
 ---
 
@@ -134,7 +144,7 @@ NEXUS Trade/
 | 02 | From Design to Objects | Phase 01 entities as Python classes in `tools/models/` | ✅ |
 | 03 | Connecting Objects | Object references between domain classes (no collections yet) | ✅ |
 | 04 | Inheritance | One superclass with at least two subclasses | ✅ |
-| 05 | Polymorphism and Interfaces | One interface (ABC) used polymorphically, plus domain expansion | ⬜ |
+| 05 | Polymorphism and Interfaces | One interface (ABC) used polymorphically, plus domain expansion | ✅ |
 | 06 | Growing the Object Model | Typed collections, composition over inheritance, full domain review | ⬜ |
 | 07 | Evaluating OO Design | Design review notes in `docs/design/` | ⬜ |
 | 08 | Factory and Builder | `OrderFactory`, `TradePlanBuilder` | ⬜ |

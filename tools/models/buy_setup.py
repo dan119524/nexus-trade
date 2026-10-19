@@ -22,3 +22,11 @@ class BuySetup(TradeSetup):
 
     def risk(self):
         return self._entry - self._stop_loss
+
+    def outcome(self):
+        for high, low in self.pair.price_data:
+            if low <= self._stop_loss:
+                return "loss"
+            if high >= self._take_profit:
+                return "win"
+        return "open"
