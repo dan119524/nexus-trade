@@ -204,11 +204,12 @@ def _check_trade_milestones(open_entries: list[dict], oanda_open: list[dict]) ->
         import os
         from oandapyV20 import API
         from oandapyV20.endpoints.pricing import PricingInfo
+        from tools.utils.validators import require_practice_env
 
         api_key    = os.getenv("OANDA_API_KEY")
         account_id = os.getenv("OANDA_ACCOUNT_ID")
-        env        = os.getenv("OANDA_ENV", "practice")
-        client     = API(access_token=api_key, environment="live" if env == "live" else "practice")
+        require_practice_env(os.getenv("OANDA_ENV", "practice"))
+        client     = API(access_token=api_key, environment="practice")
 
         instruments = ",".join({e.get("pair", "") for e in open_entries if e.get("pair")})
         if not instruments:
