@@ -11,6 +11,7 @@ Pip value per standard lot (100,000 units) in USD:
   - Base currency USD  (USD/JPY, USD/CHF, USD/CAD):  10 / current_price per pip
   - Cross pair         (EUR/GBP, GBP/JPY, EUR/JPY):  approximate via quote pip value
 
+The risk percent must be greater than 0 and at most 2 (FR9).
 Lot size is capped at 100 and rounded down to 2 decimal places. If even the 0.01 minimum lot
 would risk more than the risk limit, there is no trade: a warning is logged and None is returned.
 """
@@ -34,6 +35,7 @@ _USD_BASE_PAIRS = {
 _LOT_UNITS = 100_000  # 1 standard lot
 _MAX_LOT   = 100.0
 _MIN_LOT   = 0.01
+_MAX_RISK_PERCENT = 2.0  # FR9 cap, the same as Account
 
 
 def pip_value_per_lot(pair: str, price: float) -> float:
@@ -82,8 +84,8 @@ def calculate_lot_size(
     """
     if sl_pips <= 0:
         raise ValueError(f"sl_pips must be positive, got {sl_pips}")
-    if not (0 < risk_percent <= 10):
-        raise ValueError(f"risk_percent must be between 0 and 10, got {risk_percent}")
+    if not (0 < risk_percent <= _MAX_RISK_PERCENT):
+        raise ValueError(f"risk_percent must be greater than 0 and at most 2, got {risk_percent}")
     if account_balance <= 0:
         raise ValueError(f"account_balance must be positive, got {account_balance}")
 

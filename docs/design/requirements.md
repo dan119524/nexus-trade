@@ -122,6 +122,7 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 
 - The Phase 05 conflict between FR1 and `detect_trend.py` was resolved in Phase 06 by FR12: FR1 is a currency pair's market structure, and a timeframe's trend comes from its swing labels.
 - The conflict between `calculate_lot_size` rounding the lot size to the nearest 0.01 (which could round up past the account's maximum risk) and FR9 was resolved after Phase 06: the tool now rounds the lot size down to 0.01, and when even the 0.01 minimum lot would risk more than the limit it returns no trade instead of forcing 0.01.
+- The conflict between FR9's 2% cap and `calculate_lot_size` (which accepted a risk percent up to 10) was resolved after Phase 06: the tool now rejects a risk percent above 2 with `ValueError`, the same cap as `Account`, and so does the unused `validate_risk_percent` helper.
 
 ## Model Rules
 

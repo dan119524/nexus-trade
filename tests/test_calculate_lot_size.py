@@ -46,8 +46,8 @@ def test_lot_size_minimum_cap():
 
 def test_lot_size_maximum_cap():
     from tools.trade_plan.calculate_lot_size import calculate_lot_size
-    # Very large account / very tight SL → cap at 100
-    result = calculate_lot_size(10_000_000, 10.0, 1, "EUR_USD", 1.085)
+    # Very large account / very tight SL → cap at 100 (2% of $10M over 1 pip = 20,000 lots)
+    result = calculate_lot_size(10_000_000, 2.0, 1, "EUR_USD", 1.085)
     assert result["lot_size"] == 100.0
 
 
@@ -63,6 +63,46 @@ def test_lot_size_invalid_risk_percent():
         calculate_lot_size(5000, 0, 20, "EUR_USD", 1.085)
     with pytest.raises(ValueError):
         calculate_lot_size(5000, 11, 20, "EUR_USD", 1.085)
+
+
+# ── Risk percent capped at 2% (fix after Phase 06, FR9) ───────────────────────
+
+def test_risk_percent_of_exactly_2_is_allowed():
+    from tools.trade_plan.calculate_lot_size import calculate_lot_size
+    # $5000 × 2% = $100 limit; 20 pips × $10 → 0.50 lots
+    result = calculate_lot_size(5000, 2.0, 20, "EUR_USD", 1.085)
+    assert result["lot_size"] == 0.50
+    assert result["risk_amount_usd"] == 100.0
+
+
+@pytest.mark.parametrize("risk_percent", [2.01, 2.5, 3, 5.0, 10.0])
+def test_risk_percent_above_2_is_rejected(risk_percent):
+    from tools.trade_plan.calculate_lot_size import calculate_lot_size
+    with pytest.raises(ValueError, match="at most 2"):
+        calculate_lot_size(5000, risk_percent, 20, "EUR_USD", 1.085)
+
+
+@pytest.mark.parametrize("risk_percent", [0.5, 1.0, 2.0])
+def test_validate_risk_percent_allows_up_to_2(risk_percent):
+    from tools.utils.validators import validate_risk_percent
+    validate_risk_percent(risk_percent)
+
+
+@pytest.mark.parametrize("risk_percent", [0, -1, 2.01, 3, 10.0])
+def test_validate_risk_percent_rejects_0_or_less_and_above_2(risk_percent):
+    from tools.utils.validators import validate_risk_percent
+    with pytest.raises(ValueError, match="at most 2"):
+        validate_risk_percent(risk_percent)
+
+
+def test_build_trade_plan_rejects_risk_percent_above_2(tmp_path, monkeypatch):
+    from tools.utils.file_io import read_json
+    btp, signal_path = _plan_files(tmp_path, monkeypatch, balance=10_000)
+    before = read_json(signal_path)
+
+    with pytest.raises(ValueError, match="at most 2"):
+        btp.build_trade_plan("EUR_USD", risk_percent=3.0)
+    assert read_json(signal_path) == before
 
 
 def test_lot_size_invalid_balance():

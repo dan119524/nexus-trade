@@ -34,7 +34,7 @@ def validate_pair_format(pair: str) -> None:
 
 
 def validate_risk_percent(risk_percent: float) -> None:
-    if not (0 < risk_percent <= 10):
+    if not (0 < risk_percent <= 2):  # FR9 cap
         raise ValueError(
-            f"risk_percent must be between 0 and 10. Got: {risk_percent}"
+            f"risk_percent must be greater than 0 and at most 2. Got: {risk_percent}"
         )
