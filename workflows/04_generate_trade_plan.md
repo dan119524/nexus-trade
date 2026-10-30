@@ -63,7 +63,7 @@ The signal file should now have `status: "active"` and a filled `trade_plan`. Co
 - [ ] `risk_reward` ≥ 2.0
 - [ ] `lot_size` is not 0.01 or 100.0 (those are the safety caps)
 - [ ] `risk_percent` ≤ 2.0
-- [ ] `account_balance` is the real practice balance, not the $10,000 fallback
+- [ ] `account_balance` is the real practice balance (there is no fallback; a failed fetch writes no plan)
 
 Only continue to Workflow 05 if every box is checked, since the summary costs an API call.
 
@@ -126,7 +126,7 @@ lot_size      = risk_amount / (sl_pips × pip_value_per_lot)
 | No valid signal | Script logs an error and returns `None`. Run Workflows 01–03 first. |
 | No swing high/low beyond entry | Fall back to the 3 most recent swings of the correct type. |
 | R:R < 2.0 | Reject the setup. Log a warning. Don't write a plan. Wait for a better setup. |
-| Account fetch fails | Falls back to a $10,000 balance and logs a warning. Flag this to Daniel; the lot size won't match the real account. |
+| Account fetch fails, or balance is 0 or less | Reject the setup. Log an error. Don't write a plan. Check the OANDA practice credentials in `.env`, then rerun. |
 | Lot size hits 0.01 or 100 cap | Log a warning. SL is too wide, or the account is too small or large for the size. |
 
 ---

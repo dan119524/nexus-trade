@@ -279,3 +279,46 @@ def test_build_trade_plan_still_writes_a_plan_for_a_normal_account(tmp_path, mon
     saved = read_json(signal_path)
     assert saved["status"] == "active"
     assert saved["trade_plan"]["lot_size"] == 0.09
+
+
+# ── No fallback balance (fix after Phase 06) ─────────────────────────────────
+
+def _failing_fetch(error):
+    def fetch_account():
+        raise error
+    return fetch_account
+
+
+@pytest.mark.parametrize("error", [
+    EnvironmentError("OANDA_ACCOUNT_ID not set in .env"),
+    ConnectionError("OANDA unreachable"),
+    KeyError("balance"),
+])
+def test_build_trade_plan_writes_no_plan_when_the_account_cannot_be_fetched(tmp_path, monkeypatch, error):
+    from tools.utils.file_io import read_json
+    btp, signal_path = _plan_files(tmp_path, monkeypatch, balance=10_000)
+    monkeypatch.setattr(btp, "fetch_account", _failing_fetch(error))
+    before = read_json(signal_path)
+
+    assert btp.build_trade_plan("EUR_USD", risk_percent=1.0) is None
+    assert read_json(signal_path) == before
+
+
+@pytest.mark.parametrize("balance", [0, 0.0, -50])
+def test_build_trade_plan_writes_no_plan_when_the_balance_is_not_above_0(tmp_path, monkeypatch, balance):
+    from tools.utils.file_io import read_json
+    btp, signal_path = _plan_files(tmp_path, monkeypatch, balance=balance)
+    before = read_json(signal_path)
+
+    assert btp.build_trade_plan("EUR_USD", risk_percent=1.0) is None
+    assert read_json(signal_path) == before
+
+
+def test_build_trade_plan_never_sizes_against_10000_when_the_fetch_fails(tmp_path, monkeypatch):
+    btp, _ = _plan_files(tmp_path, monkeypatch, balance=10_000)
+    monkeypatch.setattr(btp, "fetch_account", _failing_fetch(ConnectionError("OANDA unreachable")))
+    sized = []
+    monkeypatch.setattr(btp, "calculate_lot_size", lambda **kwargs: sized.append(kwargs))
+
+    btp.build_trade_plan("EUR_USD", risk_percent=1.0)
+    assert sized == []

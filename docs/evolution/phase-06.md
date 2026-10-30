@@ -178,6 +178,16 @@ Results: `tests/models/` gives 452 passed. The full suite gives 541 passed and 2
 | Minimum lot | At first the 0.01 minimum cap was kept, so when even 0.01 lots risked more than the limit, the tool still forced 0.01 and exceeded it. A second fix after Phase 06 (branch `fix/lot-min-over-risk`, merged through a pull request) changed this: `calculate_lot_size` logs a warning and returns `None` (no trade), and `build_trade_plan` logs "Setup rejected" and returns `None` without writing a plan, the same way it handles a low R:R. `test_lot_size_minimum_cap` now expects `None` (the requirement changed). New tests: a $50 account with a 20-pip stop gives no trade; a minimum lot exactly at the limit is still a trade; a normal account is unchanged; and `build_trade_plan` (with fixed files and a fake account, no OANDA) writes no plan for a tiny account but still writes a 0.09-lot plan for a $10,000 account. Without the new guard, `build_trade_plan` crashed with `TypeError`. |
 | Records | The Known Conflicts row in `requirements.md` became a resolution note. |
 
+## Fix After Phase 06: No Fallback Balance
+
+| Item | Detail |
+|---|---|
+| Where | `tools/trade_plan/build_trade_plan.py`, `build_trade_plan` |
+| Bug | When `fetch_account()` raised, or returned a balance of 0 or less, the tool logged a warning and sized the trade against a $10,000 balance. The plan's lot size and risk then had nothing to do with the real account (FR9). |
+| Fix | Made after Phase 06 on branch `fix/no-fallback-balance`. Both cases now log "Setup rejected" as an error and return `None` without writing a plan, the same way the tool handles a low R:R or a minimum lot over the limit. |
+| Tests | `tests/test_calculate_lot_size.py`, with the fixed files and fake account from the minimum-lot fix: a fetch that raises `EnvironmentError`, `ConnectionError`, or `KeyError` writes no plan and leaves the signal file unchanged; a balance of 0, 0.0, or -50 does the same; and a failed fetch never reaches `calculate_lot_size`. The existing $10,000 test still writes a 0.09-lot plan. Against the old code, all 7 new tests fail. |
+| Records | A resolution note was added under Known Conflicts in `requirements.md`. The checklist and the "Account fetch fails" edge case in `workflows/04_generate_trade_plan.md` no longer describe the fallback. |
+
 ## Notes for Later Phases
 
 | Phase | Note |
