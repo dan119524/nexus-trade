@@ -188,6 +188,16 @@ Results: `tests/models/` gives 452 passed. The full suite gives 541 passed and 2
 | Tests | `tests/test_practice_only_env.py` (40 tests, mocks and fake keys only, no OANDA): the check refuses `live`, `LIVE`, `Practice`, an empty string, and `fxtrade`; each `_build_client` refuses them without building an `API` and builds a practice `API` otherwise; `fetch_candles`, `fetch_account`, and `fetch_instruments` refuse `live`; `weekly_cycle` and `/prices` build no client under `OANDA_ENV=live` and a practice client otherwise; `validate_env` accepts `"practice"` and rejects the same five values. Against the old code, 29 of the 40 fail. |
 | Records | A resolution note was added under Known Conflicts in `requirements.md`. |
 
+## Fix After Phase 06: Risk Percent Capped at 2%
+
+| Item | Detail |
+|---|---|
+| Where | `tools/trade_plan/calculate_lot_size.py`, `calculate_lot_size` |
+| Bug | The tool accepted a risk percent up to 10, but FR9 and `Account` cap it at 2. A `RISK_PERCENT` or `--risk` above 2 sized a trade past the limit. |
+| Fix | Made after Phase 06 on branch `fix/risk-cap-2pct`. A new `_MAX_RISK_PERCENT = 2.0` replaces the 10, and a risk percent above it raises `ValueError` ("must be greater than 0 and at most 2"). `build_trade_plan` does not catch it, so no plan is written. The unused `validate_risk_percent` helper in `tools/utils/validators.py` also allowed up to 10; it now caps at 2 as well. |
+| Tests | `tests/test_calculate_lot_size.py`: exactly 2% is allowed (0.50 lots on $5,000 over 20 pips); 2.01, 2.5, 3, 5, and 10 are rejected; `build_trade_plan` with 3% raises and leaves the signal file unchanged; and `validate_risk_percent` allows 0.5, 1, and 2 and rejects 0, -1, 2.01, 3, and 10. `test_lot_size_maximum_cap` used 10% to reach the 100-lot cap; it now uses 2%, which still reaches the cap (20,000 lots before capping), because 10% breaks FR9. Against the old code, 11 of the 15 new tests fail. |
+| Records | A resolution note was added under Known Conflicts in `requirements.md`. |
+
 ## Notes for Later Phases
 
 | Phase | Note |
