@@ -3,7 +3,7 @@ Assemble a complete trade plan from a valid confluence signal.
 
 Sequence:
   1. Load signal from .tmp/signals/
-  2. Fetch current account balance
+  2. Fetch current account balance (no plan if it can't be fetched or is not above 0)
   3. Load analysis for reference timeframe (H1)
   4. calculate_entry()
   5. calculate_sl_tp()
@@ -131,12 +131,12 @@ def build_trade_plan(
     try:
         account = fetch_account()
         balance = account["balance"]
-        if balance <= 0:
-            log.warning("Account balance is 0. Using fallback of 10,000 for sizing.")
-            balance = 10_000.0
     except Exception as e:
-        log.warning(f"Could not fetch account balance ({e}). Using fallback of 10,000.")
-        balance = 10_000.0
+        log.error(f"Setup rejected: could not fetch the account balance for {pair} ({e}). No plan written.")
+        return None
+    if balance <= 0:
+        log.error(f"Setup rejected: account balance is {balance} for {pair}. No plan written.")
+        return None
 
     sizing = calculate_lot_size(
         account_balance=balance,

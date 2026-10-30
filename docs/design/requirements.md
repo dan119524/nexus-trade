@@ -124,6 +124,7 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 - The conflict between `calculate_lot_size` rounding the lot size to the nearest 0.01 (which could round up past the account's maximum risk) and FR9 was resolved after Phase 06: the tool now rounds the lot size down to 0.01, and when even the 0.01 minimum lot would risk more than the limit it returns no trade instead of forcing 0.01.
 - The conflict between FR5 and the OANDA clients in `fetch_candles`, `fetch_account`, `fetch_instruments`, `execute_trade`, `weekly_cycle`, and `server` (each connected to the live environment when `OANDA_ENV=live`) was resolved after Phase 06: every client now calls `require_practice_env` and refuses any environment except practice, and the unused `validate_env` helper accepts practice only.
 - The conflict between FR9's 2% cap and `calculate_lot_size` (which accepted a risk percent up to 10) was resolved after Phase 06: the tool now rejects a risk percent above 2 with `ValueError`, the same cap as `Account`, and so does the unused `validate_risk_percent` helper.
+- The conflict between FR9 (a plan's risk is sized from the account's balance) and `build_trade_plan` (which sized against a made-up $10,000 balance when the account fetch failed or the balance was 0) was resolved after Phase 06: the tool now writes no plan in either case.
 
 ## Model Rules
 

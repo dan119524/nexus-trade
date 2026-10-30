@@ -198,6 +198,16 @@ Results: `tests/models/` gives 452 passed. The full suite gives 541 passed and 2
 | Tests | `tests/test_calculate_lot_size.py`: exactly 2% is allowed (0.50 lots on $5,000 over 20 pips); 2.01, 2.5, 3, 5, and 10 are rejected; `build_trade_plan` with 3% raises and leaves the signal file unchanged; and `validate_risk_percent` allows 0.5, 1, and 2 and rejects 0, -1, 2.01, 3, and 10. `test_lot_size_maximum_cap` used 10% to reach the 100-lot cap; it now uses 2%, which still reaches the cap (20,000 lots before capping), because 10% breaks FR9. Against the old code, 11 of the 15 new tests fail. |
 | Records | A resolution note was added under Known Conflicts in `requirements.md`. |
 
+## Fix After Phase 06: No Fallback Balance
+
+| Item | Detail |
+|---|---|
+| Where | `tools/trade_plan/build_trade_plan.py`, `build_trade_plan` |
+| Bug | When `fetch_account()` raised, or returned a balance of 0 or less, the tool logged a warning and sized the trade against a $10,000 balance. The plan's lot size and risk then had nothing to do with the real account (FR9). |
+| Fix | Made after Phase 06 on branch `fix/no-fallback-balance`. Both cases now log "Setup rejected" as an error and return `None` without writing a plan, the same way the tool handles a low R:R or a minimum lot over the limit. |
+| Tests | `tests/test_calculate_lot_size.py`, with the fixed files and fake account from the minimum-lot fix: a fetch that raises `EnvironmentError`, `ConnectionError`, or `KeyError` writes no plan and leaves the signal file unchanged; a balance of 0, 0.0, or -50 does the same; and a failed fetch never reaches `calculate_lot_size`. The existing $10,000 test still writes a 0.09-lot plan. Against the old code, all 7 new tests fail. |
+| Records | A resolution note was added under Known Conflicts in `requirements.md`. The checklist and the "Account fetch fails" edge case in `workflows/04_generate_trade_plan.md` no longer describe the fallback. |
+
 ## Notes for Later Phases
 
 | Phase | Note |
