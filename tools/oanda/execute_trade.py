@@ -23,6 +23,7 @@ from oandapyV20.endpoints import orders, trades as oanda_trades
 
 from tools.utils.file_io import get_signal_path, read_json, write_json, file_exists
 from tools.utils.logger import get_logger
+from tools.utils.validators import require_practice_env
 
 load_dotenv()
 log = get_logger(__name__)
@@ -33,15 +34,14 @@ _MAX_LOT_EXECUTE = 5.0    # Hard cap — keeps margin usage reasonable on practi
 def _build_client() -> tuple[API, str]:
     api_key = os.getenv("OANDA_API_KEY")
     account_id = os.getenv("OANDA_ACCOUNT_ID")
-    env = os.getenv("OANDA_ENV", "practice")
+    require_practice_env(os.getenv("OANDA_ENV", "practice"))
 
     if not api_key:
         raise EnvironmentError("OANDA_API_KEY not set in .env")
     if not account_id:
         raise EnvironmentError("OANDA_ACCOUNT_ID not set in .env")
 
-    environment = "live" if env == "live" else "practice"
-    return API(access_token=api_key, environment=environment), account_id
+    return API(access_token=api_key, environment="practice"), account_id
 
 
 def _units_from_lot(lot_size: float, direction: str) -> int:
