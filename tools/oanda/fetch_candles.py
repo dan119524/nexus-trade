@@ -21,7 +21,7 @@ from oandapyV20.endpoints import instruments
 
 from tools.utils.file_io import get_candle_path, write_json
 from tools.utils.logger import get_logger
-from tools.utils.validators import validate_granularity, validate_pair_format
+from tools.utils.validators import require_practice_env, validate_granularity, validate_pair_format
 
 load_dotenv()
 log = get_logger(__name__)
@@ -52,11 +52,11 @@ DEFAULT_COUNTS = {
 
 
 def _build_client(env: str) -> API:
+    require_practice_env(env)
     api_key = os.getenv("OANDA_API_KEY")
     if not api_key:
         raise EnvironmentError("OANDA_API_KEY not set in .env")
-    environment = "live" if env == "live" else "practice"
-    return API(access_token=api_key, environment=environment)
+    return API(access_token=api_key, environment="practice")
 
 
 def _normalize_candle(raw: dict, pair: str, granularity: str) -> dict:
@@ -91,7 +91,7 @@ def fetch_candles(
         count:       Number of candles to fetch (ignored when from_time/to_time set)
         from_time:   ISO8601 start, e.g. "2024-01-01T00:00:00Z"
         to_time:     ISO8601 end, e.g. "2024-06-30T23:59:59Z"
-        env:         "practice" | "live" (defaults to OANDA_ENV in .env)
+        env:         "practice" (defaults to OANDA_ENV in .env; anything else is refused)
 
     Returns:
         List of normalized candle dicts.
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     parser.add_argument("--count", type=int, default=500)
     parser.add_argument("--from-time", default=None)
     parser.add_argument("--to-time", default=None)
-    parser.add_argument("--env", default=None, help="practice | live")
+    parser.add_argument("--env", default=None, help="practice (anything else is refused)")
     args = parser.parse_args()
 
     if args.granularity:

@@ -7,7 +7,7 @@ VALID_GRANULARITIES = {
     "H1", "H4",
     "D", "W", "M",
 }
-VALID_ENVS = {"practice", "live"}
+VALID_ENVS = {"practice"}  # FR5: practice only
 
 
 def validate_granularity(granularity: str) -> None:
@@ -21,7 +21,15 @@ def validate_granularity(granularity: str) -> None:
 def validate_env(env: str) -> None:
     if env not in VALID_ENVS:
         raise ValueError(
-            f"Invalid OANDA env '{env}'. Must be 'practice' or 'live'."
+            f"Invalid OANDA env '{env}'. Must be 'practice'."
+        )
+
+
+def require_practice_env(env: str) -> None:
+    """Refuse every OANDA environment except practice (FR5)."""
+    if env != "practice":
+        raise EnvironmentError(
+            f"OANDA env '{env}' refused. Only the practice environment is allowed."
         )
 
 

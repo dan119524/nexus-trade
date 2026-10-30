@@ -178,6 +178,16 @@ Results: `tests/models/` gives 452 passed. The full suite gives 541 passed and 2
 | Minimum lot | At first the 0.01 minimum cap was kept, so when even 0.01 lots risked more than the limit, the tool still forced 0.01 and exceeded it. A second fix after Phase 06 (branch `fix/lot-min-over-risk`, merged through a pull request) changed this: `calculate_lot_size` logs a warning and returns `None` (no trade), and `build_trade_plan` logs "Setup rejected" and returns `None` without writing a plan, the same way it handles a low R:R. `test_lot_size_minimum_cap` now expects `None` (the requirement changed). New tests: a $50 account with a 20-pip stop gives no trade; a minimum lot exactly at the limit is still a trade; a normal account is unchanged; and `build_trade_plan` (with fixed files and a fake account, no OANDA) writes no plan for a tiny account but still writes a 0.09-lot plan for a $10,000 account. Without the new guard, `build_trade_plan` crashed with `TypeError`. |
 | Records | The Known Conflicts row in `requirements.md` became a resolution note. |
 
+## Fix After Phase 06: Practice-Only OANDA Clients
+
+| Item | Detail |
+|---|---|
+| Where | `tools/oanda/fetch_candles.py`, `fetch_account.py`, `fetch_instruments.py`, and `execute_trade.py` (`_build_client`); `tools/scheduler/weekly_cycle.py` (`_check_trade_milestones`); `tools/api/server.py` (`/prices`) |
+| Bug | Each client used `"live" if env == "live" else "practice"`, so `OANDA_ENV=live` (or `--env live`) connected to the live environment, against FR5. Only order execution and trade closing refused live. |
+| Fix | Made after Phase 06 on branch `fix/practice-only-env`. A new `require_practice_env(env)` in `tools/utils/validators.py` raises `EnvironmentError` for anything except `"practice"`. Every client calls it before building its `API`, and every `API` is built with `environment="practice"`. The API's existing broad `except` turns the refusal into a 502. The unused `validate_env` helper also allowed `"live"`; it now accepts `"practice"` only, so it can't be reused to allow live. |
+| Tests | `tests/test_practice_only_env.py` (40 tests, mocks and fake keys only, no OANDA): the check refuses `live`, `LIVE`, `Practice`, an empty string, and `fxtrade`; each `_build_client` refuses them without building an `API` and builds a practice `API` otherwise; `fetch_candles`, `fetch_account`, and `fetch_instruments` refuse `live`; `weekly_cycle` and `/prices` build no client under `OANDA_ENV=live` and a practice client otherwise; `validate_env` accepts `"practice"` and rejects the same five values. Against the old code, 29 of the 40 fail. |
+| Records | A resolution note was added under Known Conflicts in `requirements.md`. |
+
 ## Fix After Phase 06: Risk Percent Capped at 2%
 
 | Item | Detail |

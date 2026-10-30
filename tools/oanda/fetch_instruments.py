@@ -15,6 +15,7 @@ from oandapyV20 import API
 from oandapyV20.endpoints import accounts
 
 from tools.utils.logger import get_logger
+from tools.utils.validators import require_practice_env
 
 load_dotenv()
 log = get_logger(__name__)
@@ -23,11 +24,11 @@ _INSTRUMENTS_CACHE: list[str] | None = None
 
 
 def _build_client(env: str) -> API:
+    require_practice_env(env)
     api_key = os.getenv("OANDA_API_KEY")
     if not api_key:
         raise EnvironmentError("OANDA_API_KEY not set in .env")
-    environment = "live" if env == "live" else "practice"
-    return API(access_token=api_key, environment=environment)
+    return API(access_token=api_key, environment="practice")
 
 
 def fetch_instruments(env: str | None = None) -> list[str]:
