@@ -451,11 +451,11 @@ def get_prices(instruments: str) -> list[dict]:
         import os
         from oandapyV20 import API
         from oandapyV20.endpoints.pricing import PricingInfo
+        from tools.utils.validators import require_practice_env
+        require_practice_env(os.getenv("OANDA_ENV", "practice"))
         api_key = os.getenv("OANDA_API_KEY")
         account_id = os.getenv("OANDA_ACCOUNT_ID")
-        env = os.getenv("OANDA_ENV", "practice")
-        environment = "live" if env == "live" else "practice"
-        client = API(access_token=api_key, environment=environment)
+        client = API(access_token=api_key, environment="practice")
         req = PricingInfo(accountID=account_id, params={"instruments": instruments})
         client.request(req)
         result = []
