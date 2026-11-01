@@ -26,6 +26,11 @@ def validate_pair_name(name):
     return name
 
 
+def pip_size_for(name):
+    """Return the pip size for a pair name: 0.01 for a pair containing JPY, and 0.0001 otherwise."""
+    return 0.01 if "JPY" in name else 0.0001
+
+
 def validate_pair(pair):
     """Return pair if it is a CurrencyPair. Otherwise raise ValueError."""
     if not isinstance(pair, CurrencyPair):
@@ -93,7 +98,7 @@ class CurrencyPair:
 
     def pip_size(self):
         """Return 0.01 for a pair containing JPY, and 0.0001 otherwise."""
-        return 0.01 if "JPY" in self._name else 0.0001
+        return pip_size_for(self._name)
 
     def pip_value_per_lot(self, price):
         """Return the USD value of 1 pip per standard lot at price. Raise ValueError for a cross pair (FR9)."""

@@ -124,12 +124,12 @@ lot_size      = risk_amount / (sl_pips × pip_value_per_lot)
 | Situation | How to handle |
 |---|---|
 | No valid signal | Script logs an error and returns `None`. Run Workflows 01–03 first. |
-| No swing high/low beyond entry | Fall back to the 3 most recent swings of the correct type. |
+| No swing high/low beyond entry | Skip the trade. `calculate_sl_tp` raises `ValueError` and never places an SL on the wrong side of entry. Don't write a plan. |
 | R:R < 2.0 | Reject the setup. Log a warning. Don't write a plan. Wait for a better setup. |
 | Account fetch fails, or balance is 0 or less | Reject the setup. Log an error. Don't write a plan. Check the OANDA practice credentials in `.env`, then rerun. |
 | Lot size hits 0.01 or 100 cap | Log a warning. SL is too wide, or the account is too small or large for the size. |
 
-> **Note on the R:R < 2.0 row:** the reward-to-risk ratio is currently fixed at `rr_tp1 = 2.0`. `build_trade_plan` calls `calculate_sl_tp` with its default `rr_tp1`, and `calculate_sl_tp` places TP1 at entry ± (SL distance × `rr_tp1`) and returns `risk_reward = rr_tp1`. The gate therefore only matters if `rr_tp1` changes or `MIN_RISK_REWARD` is set above 2. `test_rr_gate_rejects_low_rr` mocks `calculate_sl_tp` to test the gate itself. Whether TP1 and the ratio should come from market structure instead is open for Workshop 07.
+> **Note on the R:R < 2.0 row:** the reward-to-risk ratio is currently fixed at `rr_tp1 = 2.0`. `build_trade_plan` calls `calculate_sl_tp` with its default `rr_tp1`, and `calculate_sl_tp` places TP1 at entry ± (SL distance × `rr_tp1`) and returns `risk_reward` measured from entry, SL and TP1, rounded to 2 decimals (Phase 07), which for this fixed placement is always 2.00. The gate therefore only matters if `rr_tp1` changes or `MIN_RISK_REWARD` is set above 2. `test_rr_gate_rejects_low_rr` mocks `calculate_sl_tp` to test the gate itself. Whether TP1 and the ratio should come from market structure instead is open for Workshop 07.
 
 ---
 
@@ -137,7 +137,7 @@ lot_size      = risk_amount / (sl_pips × pip_value_per_lot)
 
 - Tests live in `tests/test_calculate_lot_size.py`. Add plan-level tests in a new `tests/test_build_trade_plan.py`.
 - Use fixed signal, analysis, and candle fixtures, plus a fixed account balance. Never call OANDA.
-- Cover: SL side for bullish and bearish, TP1/TP2 math, R:R < 2 rejection, lot size formula, lot caps, reference TF priority, the swing fallback, and risk % above 2 being refused.
+- Cover: SL side for bullish and bearish, TP1/TP2 math, R:R < 2 rejection, lot size formula, lot caps, reference TF priority, skipping the trade when no swing is beyond entry, and risk % above 2 being refused.
 
 ## Done When
 

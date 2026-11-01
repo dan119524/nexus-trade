@@ -198,6 +198,41 @@ def test_sl_pips_calculated_correctly():
     assert result["sl_pips"] > 0
 
 
+@pytest.mark.parametrize("pair, entry, direction, highs, lows", [
+    ("EUR_USD", 1.0850, "bullish", [1.0900], [1.0800, 1.0820]),
+    ("EUR_USD", 1.0850, "bearish", [1.0880, 1.0900], [1.0800]),
+    ("USD_JPY", 150.250, "bullish", [151.000], [149.800, 150.000]),
+    ("USD_JPY", 150.250, "bearish", [150.600, 150.900], [149.500]),
+])
+def test_measured_rr_is_2_for_fixed_2r_setup(pair, entry, direction, highs, lows):
+    """risk_reward is measured from entry, SL and TP1 (rounded to 2 decimals), not echoed from rr_tp1."""
+    from tools.trade_plan.calculate_sl_tp import calculate_sl_tp
+    result = calculate_sl_tp(entry, direction, make_swings(highs, "high"), make_swings(lows, "low"), pair)
+    measured = abs(result["take_profit_1"] - entry) / abs(entry - result["stop_loss"])
+    assert round(measured, 2) == 2.00
+    assert result["risk_reward"] == 2.00
+
+
+def test_measured_rr_follows_rr_tp1():
+    from tools.trade_plan.calculate_sl_tp import calculate_sl_tp
+    result = calculate_sl_tp(1.0850, "bullish", make_swings([1.09], "high"), make_swings([1.08], "low"),
+                             "EUR_USD", rr_tp1=2.5)
+    assert result["risk_reward"] == 2.50
+
+
+def test_bearish_no_swing_above_entry_raises():
+    """Never place a bearish SL below entry: the earlier fallback did, at 1.1012 for entry 1.1050."""
+    from tools.trade_plan.calculate_sl_tp import calculate_sl_tp
+    with pytest.raises(ValueError, match="above entry"):
+        calculate_sl_tp(1.1050, "bearish", make_swings([1.1000, 1.1010], "high"), make_swings([1.09], "low"), "EUR_USD")
+
+
+def test_bullish_no_swing_below_entry_raises():
+    from tools.trade_plan.calculate_sl_tp import calculate_sl_tp
+    with pytest.raises(ValueError, match="below entry"):
+        calculate_sl_tp(1.0850, "bullish", make_swings([1.09], "high"), make_swings([1.0900, 1.0880], "low"), "EUR_USD")
+
+
 def test_no_swing_highs_raises():
     from tools.trade_plan.calculate_sl_tp import calculate_sl_tp
     with pytest.raises(ValueError):
