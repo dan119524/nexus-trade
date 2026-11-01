@@ -9,3 +9,6 @@ venv/
 .pytest_cache/
 credentials.json
 token.json
+
+# Course workshop files copied from course-content (not tracked)
+workshops/
