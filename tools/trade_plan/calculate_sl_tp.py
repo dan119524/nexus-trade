@@ -11,19 +11,13 @@ Take Profit:
   - TP2 = entry ± (SL distance × 3)   → 3:1 R:R
 """
 
+from tools.models.currency_pair import pip_size_for
 from tools.utils.logger import get_logger
 
 log = get_logger(__name__)
 
 # Buffer added beyond the swing point (in price units, ~2 pips for majors)
 DEFAULT_BUFFER = 0.00020
-
-
-def _pip_size(pair: str) -> float:
-    """Return the pip size for a currency pair."""
-    if "JPY" in pair:
-        return 0.01
-    return 0.0001
 
 
 def calculate_sl_tp(
@@ -52,16 +46,16 @@ def calculate_sl_tp(
     Returns:
         Dict with stop_loss, take_profit_1, take_profit_2, sl_pips, rr.
     """
-    pip = _pip_size(pair)
+    pip = pip_size_for(pair)
 
     if direction == "bearish":
         # SL above the most recent swing HIGH
+        if not swing_highs:
+            raise ValueError("No swing highs available to place SL for bearish trade")
         relevant_swings = [s for s in swing_highs if s["price"] > entry]
         if not relevant_swings:
-            # Fall back to the highest recent swing high
-            relevant_swings = swing_highs
-        if not relevant_swings:
-            raise ValueError("No swing highs available to place SL for bearish trade")
+            # Never place a bearish SL below entry (FR2): skip the trade
+            raise ValueError("No swing high above entry to place SL for bearish trade")
 
         swing_price = max(s["price"] for s in relevant_swings[-3:])
         sl = round(swing_price + buffer, 5)
@@ -71,11 +65,12 @@ def calculate_sl_tp(
 
     elif direction == "bullish":
         # SL below the most recent swing LOW
+        if not swing_lows:
+            raise ValueError("No swing lows available to place SL for bullish trade")
         relevant_swings = [s for s in swing_lows if s["price"] < entry]
         if not relevant_swings:
-            relevant_swings = swing_lows
-        if not relevant_swings:
-            raise ValueError("No swing lows available to place SL for bullish trade")
+            # Never place a bullish SL above entry (FR2): skip the trade
+            raise ValueError("No swing low below entry to place SL for bullish trade")
 
         swing_price = min(s["price"] for s in relevant_swings[-3:])
         sl = round(swing_price - buffer, 5)
@@ -87,7 +82,8 @@ def calculate_sl_tp(
         raise ValueError(f"Invalid direction: {direction}")
 
     sl_pips = round(abs(sl_distance) / pip, 1)
-    rr = round(rr_tp1, 2)
+    # Measured R:R to TP1 from the returned prices, rounded to 2 decimals as TradePlan does (FR2)
+    rr = round(abs(tp1 - entry) / abs(entry - sl), 2)
 
     result = {
         "stop_loss": sl,

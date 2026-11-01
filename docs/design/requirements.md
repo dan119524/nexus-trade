@@ -91,7 +91,7 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 
 - A TradePlan rejects a setup whose reward-to-risk ratio to TP1, rounded to 2 decimals, is below 2.
 - This closes Phase 02 decision D5 (FR2's minimum reward-to-risk of 2). TradeSetup itself still does not enforce the minimum; TradePlan does.
-- In the tools, the reward-to-risk ratio is currently fixed at `rr_tp1 = 2.0`: `build_trade_plan` calls `calculate_sl_tp` with its default `rr_tp1`, and `calculate_sl_tp` places TP1 at entry ± (stop-loss distance × `rr_tp1`) and returns `risk_reward = rr_tp1`. The gate in `build_trade_plan` (reject when the ratio is below `MIN_RISK_REWARD`) therefore only matters if `rr_tp1` changes or `MIN_RISK_REWARD` is set above 2. `test_rr_gate_rejects_low_rr` mocks `calculate_sl_tp` to test the gate itself. Whether TP1 and the ratio should come from market structure instead is open for Workshop 07.
+- In the tools, the reward-to-risk ratio is currently fixed at `rr_tp1 = 2.0`: `build_trade_plan` calls `calculate_sl_tp` with its default `rr_tp1`, and `calculate_sl_tp` places TP1 at entry ± (stop-loss distance × `rr_tp1`) and returns `risk_reward` measured from entry, SL and TP1, rounded to 2 decimals (Phase 07), which for this fixed placement is always 2.00. The gate in `build_trade_plan` (reject when the ratio is below `MIN_RISK_REWARD`) therefore only matters if `rr_tp1` changes or `MIN_RISK_REWARD` is set above 2. `test_rr_gate_rejects_low_rr` mocks `calculate_sl_tp` to test the gate itself. Whether TP1 and the ratio should come from market structure instead is open for Workshop 07.
 
 ## Pip Size and Pip Value
 
