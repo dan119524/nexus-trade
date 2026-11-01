@@ -26,9 +26,11 @@ Don't continue until it reports **PHASE-08 START CHECK: PASS**.
 
 ---
 
-## 2 · Independently Apply the Builder
+## 2 · Apply the Builder
 
-**STUDENT OWNED — Claude Code and other AI tools are not allowed in this section.**
+**AI ALLOWED** — Nexus is a personal project. It is not submitted or graded, and only borrows the workshop's steps. Claude Code can write the code. You make the decisions (the problem, the pattern, and the responsibility), review every change, and must be able to explain every line.
+
+The workshop's "STUDENT OWNED, no AI" rule for this section applies to the graded CSC 413 semester application, Tirgum (`csc413-fall26-05-dan119524`), not to Nexus.
 
 Your Builder target is `TradePlanBuilder`. Phase 07 review row 1 found that `tools/trade_plan/build_trade_plan.py` mixes orchestration, file I/O, an OANDA call, and the trade plan rules, and that it never builds the existing `TradePlan` class.
 
@@ -58,7 +60,7 @@ Send Claude Code:
 
 > Phase 08 V1 check, read-only. Compare against `phase-07-completed`, including staged and unstaged changes. Confirm: one meaningful object-creation problem supported by the existing code was identified; one Builder (or Factory) was applied that actually demonstrates the pattern rather than renaming a class or method; it reasonably addresses the problem; `demo.py` shows the affected behavior still works; the demo runs; `pytest` shows no new test failures. Don't require a fluent interface, a specific class structure, both patterns, doc or diagram updates, or extra tests. Don't review unrelated areas. Report PHASE-08 V1: READY or BLOCKED with the first clear blocker. Do not modify anything, commit, push, or tag.
 
-If **BLOCKED**, fix it yourself (this section is still student owned) and run the check again. Once it reports **PHASE-08 V1: READY**:
+If **BLOCKED**, fix it (Claude Code can help) and run the check again. Once it reports **PHASE-08 V1: READY**:
 
 1. Stage and commit your V1 work.
 2. Push `workshop-08`.
