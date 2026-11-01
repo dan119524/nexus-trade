@@ -148,7 +148,7 @@ NEXUS Trade/
 | 05 | Polymorphism and Interfaces | One interface (ABC) used polymorphically, plus domain expansion | ✅ |
 | 06 | Growing the Object Model | Typed collections, composition over inheritance, full domain review | ✅ |
 | 07 | Evaluating OO Design | Design review notes in `docs/design/` | ✅ |
-| 08 | Factory and Builder | `OrderFactory`, `TradePlanBuilder` | ⬜ |
+| 08 | Factory and Builder | `OrderFactory`, `TradePlanBuilder` | ✅ |
 | 09 | Adapter and Facade | `OandaAdapter`, `TradingFacade` | ⬜ |
 | 10 | Refactoring and SOLID | Clean-up based on phase 07 review | ⬜ |
 | 11 | Architecture and MVC | FastAPI controllers + React Native views | ⬜ |
