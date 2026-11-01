@@ -212,20 +212,39 @@ def test_no_swing_lows_raises():
 
 # ── build_trade_plan RR gate ──────────────────────────────────────────────────
 
-def test_rr_gate_rejects_low_rr(tmp_path, monkeypatch):
-    """build_trade_plan should return None when RR < MIN_RISK_REWARD."""
-    import os
-    # The RR from calculate_sl_tp always returns 2.0 (hardcoded rr_tp1=2.0)
-    # so we test the gate by setting MIN_RISK_REWARD=3.0
-    monkeypatch.setenv("MIN_RISK_REWARD", "3.0")
+@pytest.mark.parametrize("rr, plan_expected", [(1.5, False), (2.0, True)])
+def test_rr_gate_rejects_low_rr(fake_tmp, monkeypatch, rr, plan_expected):
+    """build_trade_plan returns None for R:R below 2 and a plan at exactly 2 (FR2)."""
+    import json
+    from unittest.mock import MagicMock
+    monkeypatch.setenv("MIN_RISK_REWARD", "2.0")
 
-    # build_trade_plan reads from files — skip full integration here.
-    # Test that the gate logic itself works by checking rr < min directly.
+    # fake_tmp's H1 candle file is empty; build_trade_plan needs one candle for the entry
+    candle = {"time": "2024-01-01T00:00:00Z", "open": 1.1, "high": 1.101, "low": 1.099, "close": 1.1, "volume": 100}
+    (fake_tmp / "candles" / "EUR_USD_H1.json").write_text(json.dumps([candle]))
+
+    # calculate_sl_tp always returns rr_tp1 = 2.0, so mock it to drive the gate
+    entry, sl_distance = 1.1, 0.002
+    sl_tp = {
+        "stop_loss": round(entry + sl_distance, 5),
+        "take_profit_1": round(entry - sl_distance * rr, 5),
+        "take_profit_2": round(entry - sl_distance * 3, 5),
+        "sl_pips": 20.0,
+        "risk_reward": rr,
+    }
+    monkeypatch.setattr("tools.trade_plan.build_trade_plan.calculate_sl_tp", lambda **kw: sl_tp)
+    fake_fetch_account = MagicMock(return_value={"balance": 10000.0})
+    monkeypatch.setattr("tools.trade_plan.build_trade_plan.fetch_account", fake_fetch_account)
+
     from tools.trade_plan.build_trade_plan import build_trade_plan
-    # Without signal files this returns None (missing file) — that's fine,
-    # the gate is unit-tested via the sl_tp rr field in other tests.
-    result = build_trade_plan("FAKE_PAIR")
-    assert result is None  # no signal file → returns None
+    result = build_trade_plan("EUR_USD", risk_percent=1.0)
+
+    if plan_expected:
+        assert result is not None
+        assert result["trade_plan"]["risk_reward"] == 2.0
+    else:
+        assert result is None
+        fake_fetch_account.assert_not_called()
 
 
 # ── Lot size rounds down (fix after Phase 06) ─────────────────────────────────
