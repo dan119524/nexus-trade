@@ -126,6 +126,7 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 - The conflict between FR5 and the OANDA clients in `fetch_candles`, `fetch_account`, `fetch_instruments`, `execute_trade`, `weekly_cycle`, and `server` (each connected to the live environment when `OANDA_ENV=live`) was resolved after Phase 06: every client now calls `require_practice_env` and refuses any environment except practice, and the unused `validate_env` helper accepts practice only.
 - The conflict between FR9's 2% cap and `calculate_lot_size` (which accepted a risk percent up to 10) was resolved after Phase 06: the tool now rejects a risk percent above 2 with `ValueError`, the same cap as `Account`, and so does the unused `validate_risk_percent` helper.
 - The conflict between FR9 (a plan's risk is sized from the account's balance) and `build_trade_plan` (which sized against a made-up $10,000 balance when the account fetch failed or the balance was 0) was resolved after Phase 06: the tool now writes no plan in either case.
+- The conflict between FR9 (cross pairs are rejected until a real conversion exists) and `calculate_lot_size` (which sized a cross pair with an approximate pip value of $10 per lot and only logged a warning) was resolved after Phase 07: `pip_value_per_lot` now raises `ValueError` for a cross pair, and `calculate_lot_size` returns no lot size for one, so `build_trade_plan` writes no plan.
 
 ## Model Rules
 
