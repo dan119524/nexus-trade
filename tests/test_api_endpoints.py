@@ -5,8 +5,11 @@ Uses httpx TestClient — no running server required.
 Run: pytest tests/test_api_endpoints.py -v
 """
 
+from unittest.mock import MagicMock
+
 import pytest
 from fastapi.testclient import TestClient
+from oandapyV20.exceptions import V20Error
 
 
 @pytest.fixture(scope="module")
@@ -67,14 +70,26 @@ def test_get_candles_has_required_fields(client):
             assert field in c, f"Missing field: {field}"
 
 
-def test_get_candles_unknown_pair_404(client):
+def test_get_candles_unknown_pair_404(client, monkeypatch):
+    # Fake OANDA client: rejects the instrument the way OANDA does
+    fake_client = MagicMock()
+    fake_client.request.side_effect = V20Error(
+        400, '{"errorMessage":"Invalid value specified for \'instrument\'"}'
+    )
+    monkeypatch.setattr("tools.oanda.fetch_candles._build_client", lambda env: fake_client)
+
     r = client.get("/candles/FAKE_PAIR/H1")
     assert r.status_code == 404
+    fake_client.request.assert_called_once()
 
 
-def test_get_candles_unknown_timeframe_404(client):
+def test_get_candles_unknown_timeframe_404(client, monkeypatch):
+    fake_build_client = MagicMock()
+    monkeypatch.setattr("tools.oanda.fetch_candles._build_client", fake_build_client)
+
     r = client.get("/candles/EUR_USD/D1")
     assert r.status_code == 404
+    fake_build_client.assert_not_called()
 
 
 # ── Analysis ──────────────────────────────────────────────────────────────────

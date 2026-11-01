@@ -26,6 +26,7 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from oandapyV20.exceptions import V20Error
 
 from tools.utils.file_io import (
     file_exists,
@@ -39,6 +40,7 @@ from tools.utils.file_io import (
     write_json,
 )
 from tools.utils.logger import get_logger
+from tools.utils.validators import validate_granularity, validate_pair_format
 
 load_dotenv()
 log = get_logger(__name__)
@@ -142,12 +144,22 @@ def get_candles(pair: str, timeframe: str, limit: int = 200) -> list[dict]:
     Supports: M1 M2 M5 M10 M15 M30 H1 H4 D W M
     """
     tf = timeframe.upper()
+    try:
+        validate_pair_format(pair)
+        validate_granularity(tf)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     path = get_candle_path(pair, tf)
     if not file_exists(path):
         try:
             from tools.oanda.fetch_candles import fetch_candles, DEFAULT_COUNTS
             count = DEFAULT_COUNTS.get(tf, 500)
             fetch_candles(pair, tf, count=count)
+        except V20Error as e:
+            # OANDA rejects an instrument it doesn't know with a 400
+            if e.code == 400 and "instrument" in str(e.msg):
+                raise HTTPException(status_code=404, detail=f"Unknown pair {pair}")
+            raise HTTPException(status_code=502, detail=f"Could not fetch {pair} {tf}: {e}")
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"Could not fetch {pair} {tf}: {e}")
     candles = read_json(path)
