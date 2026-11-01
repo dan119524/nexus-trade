@@ -5,7 +5,6 @@ Uses httpx TestClient — no running server required.
 Run: pytest tests/test_api_endpoints.py -v
 """
 
-import json
 from unittest.mock import MagicMock
 
 import pytest
@@ -21,45 +20,6 @@ def client():
     return TestClient(app)
 
 
-@pytest.fixture
-def fake_tmp(monkeypatch, tmp_path):
-    """Point .tmp/ at tmp_path with a small EUR_USD signal, analysis, and candle file."""
-    monkeypatch.setattr("tools.utils.file_io._TMP", tmp_path)
-    for sub in ("signals", "analysis", "candles"):
-        (tmp_path / sub).mkdir()
-
-    signal = {
-        "id": "test-signal",
-        "pair": "EUR_USD",
-        "status": "active",
-        "confluence": {"score": 3, "max_score": 4, "direction": "bearish", "signal_valid": True},
-        "trade_plan": {
-            "pair": "EUR_USD",
-            "direction": "bearish",
-            "reference_timeframe": "H4",
-            "entry_price": 1.10000,
-            "stop_loss": 1.10200,
-            "take_profit_1": 1.09600,
-            "take_profit_2": 1.09400,
-            "sl_pips": 20.0,
-            "risk_reward": 2.0,
-            "lot_size": 0.1,
-        },
-        "created_at": "2024-01-01T00:00:00Z",
-    }
-    analysis = {
-        "pair": "EUR_USD",
-        "generated_at": "2024-01-01T00:00:00Z",
-        "timeframes": {
-            "H1": {"trend": "bearish", "swing_highs": [], "swing_lows": [], "bos_events": []},
-        },
-    }
-    (tmp_path / "signals" / "EUR_USD_signals.json").write_text(json.dumps(signal))
-    (tmp_path / "analysis" / "EUR_USD_analysis.json").write_text(json.dumps(analysis))
-    (tmp_path / "candles" / "EUR_USD_H1.json").write_text("[]")
-    return tmp_path
-
-
 # ── Health ────────────────────────────────────────────────────────────────────
 
 def test_health(client):
@@ -71,7 +31,7 @@ def test_health(client):
 
 # ── Signals ───────────────────────────────────────────────────────────────────
 
-def test_get_all_signals_returns_list(client):
+def test_get_all_signals_returns_list(client, fake_tmp):
     r = client.get("/signals")
     assert r.status_code == 200
     assert isinstance(r.json(), list)
@@ -86,7 +46,7 @@ def test_get_signal_eur_usd(client, fake_tmp):
     assert "trade_plan" in data
 
 
-def test_get_signal_unknown_pair_404(client):
+def test_get_signal_unknown_pair_404(client, fake_tmp):
     r = client.get("/signals/FAKE_PAIR")
     assert r.status_code == 404
 
@@ -140,7 +100,7 @@ def test_get_candles_has_required_fields(client, fake_oanda_candles):
     fake_oanda_candles.request.assert_called_once()
 
 
-def test_get_candles_unknown_pair_404(client, monkeypatch):
+def test_get_candles_unknown_pair_404(client, monkeypatch, fake_tmp):
     # Fake OANDA client: rejects the instrument the way OANDA does
     fake_client = MagicMock()
     fake_client.request.side_effect = V20Error(
@@ -190,7 +150,7 @@ def test_get_analysis_timeframe_endpoint(client, fake_tmp):
     assert data["pair"] == "EUR_USD"
 
 
-def test_get_analysis_unknown_pair_404(client):
+def test_get_analysis_unknown_pair_404(client, fake_tmp):
     r = client.get("/analysis/FAKE_PAIR")
     assert r.status_code == 404
 
@@ -220,7 +180,7 @@ def test_trade_plan_sl_correct_side(client, fake_tmp):
         assert plan["stop_loss"] < plan["entry_price"]
 
 
-def test_get_trade_plan_unknown_pair_404(client):
+def test_get_trade_plan_unknown_pair_404(client, fake_tmp):
     r = client.get("/trade-plan/FAKE_PAIR")
     assert r.status_code == 404
 
