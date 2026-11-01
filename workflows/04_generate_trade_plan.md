@@ -129,6 +129,8 @@ lot_size      = risk_amount / (sl_pips × pip_value_per_lot)
 | Account fetch fails, or balance is 0 or less | Reject the setup. Log an error. Don't write a plan. Check the OANDA practice credentials in `.env`, then rerun. |
 | Lot size hits 0.01 or 100 cap | Log a warning. SL is too wide, or the account is too small or large for the size. |
 
+> **Note on the R:R < 2.0 row:** the reward-to-risk ratio is currently fixed at `rr_tp1 = 2.0`. `build_trade_plan` calls `calculate_sl_tp` with its default `rr_tp1`, and `calculate_sl_tp` places TP1 at entry ± (SL distance × `rr_tp1`) and returns `risk_reward = rr_tp1`. The gate therefore only matters if `rr_tp1` changes or `MIN_RISK_REWARD` is set above 2. `test_rr_gate_rejects_low_rr` mocks `calculate_sl_tp` to test the gate itself. Whether TP1 and the ratio should come from market structure instead is open for Workshop 07.
+
 ---
 
 ## Tests
