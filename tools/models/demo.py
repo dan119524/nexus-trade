@@ -8,7 +8,7 @@ from datetime import date, datetime, timezone
 from tools.models import (
     Account, BacktestResult, BreakOfStructure, BuyDirection, Candle, ChangeOfCharacter, CurrencyPair,
     Order, SellDirection, Signal, StructureEvent, SwingPoint, Timeframe, TimeframeAnalysis, Trade,
-    TradeDirection, TradePlan, TradeSetup, evaluate_setup, rank_pairs,
+    TradeDirection, TradePlan, TradePlanBuilder, TradeSetup, evaluate_setup, rank_pairs,
 )
 
 
@@ -231,6 +231,25 @@ def main():
         Order(plan, account, confirmed=False)
     except ValueError as error:
         print(f"Rejected unconfirmed order: {error}")
+
+    print("\n== Builder: TradePlanBuilder assembles a TradePlan one part at a time (Phase 08) ==")
+    built = (TradePlanBuilder()
+             .signal(signal)
+             .account(account)
+             .entry(1.0900)
+             .stop_loss(1.0850)
+             .take_profit_1(1.1000)
+             .take_profit_2(1.1050)
+             .lot_size(0.1)
+             .build())
+    print(f"Built TradePlan: {built.setup.pair_name} {built.setup.direction}, entry {built.setup.entry}, "
+          f"stop loss {built.setup.stop_loss}, TP1 {built.setup.take_profit}, TP2 {built.take_profit_2}, "
+          f"lot {built.lot_size}, risk ${built.risk_amount:.2f}, "
+          f"R:R {built.setup.reward_to_risk():.2f}, reference {built.reference_timeframe.value}")
+    try:
+        TradePlanBuilder().signal(signal).account(account).entry(1.0900).stop_loss(1.0850).build()
+    except ValueError as error:
+        print(f"Rejected incomplete builder: {error}")
 
 
 if __name__ == "__main__":

@@ -17,10 +17,11 @@ from tools.models.timeframe_analysis import TimeframeAnalysis
 from tools.models.trade_direction import TradeDirection
 from tools.models.trade import Trade
 from tools.models.trade_plan import TradePlan
+from tools.models.trade_plan_builder import TradePlanBuilder
 from tools.models.trade_setup import TradeSetup, evaluate_setup
 
 __all__ = [
     "Account", "BacktestResult", "BreakOfStructure", "BuyDirection", "Candle", "ChangeOfCharacter",
     "CurrencyPair", "Order", "SellDirection", "Signal", "StructureEvent", "SwingPoint", "Timeframe",
-    "TimeframeAnalysis", "Trade", "TradeDirection", "TradePlan", "TradeSetup", "evaluate_setup", "rank_pairs",
+    "TimeframeAnalysis", "Trade", "TradeDirection", "TradePlan", "TradePlanBuilder", "TradeSetup", "evaluate_setup", "rank_pairs",
 ]
