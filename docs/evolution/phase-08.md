@@ -155,14 +155,37 @@ Daniel decided:
 
 - Claude Code (Claude Opus 5.5) worked under `AGENTS.md`, which reserves engineering decisions for Daniel.
 - Claude Code adapted the workshop guide, ran the start check, the V1 check, and the final review, implemented `TradePlanBuilder` and the cross-pair fix from Daniel's decisions, reported why the `build_trade_plan` switch could not be done as asked, reviewed the factory option, synchronized the design documents, and wrote this record.
-- Claude Code committed the work, created `phase-08-v1`, and opened the pull requests at Daniel's request.
+- Claude Code ran the Object Creation Review (Prompt 03) on `workshop-08-review`: it reviewed every place a domain object is created and recommended Factory, Builder, or direct construction for each, then switched `demo.py` to `TradePlanBuilder`, described `Signal.trade_direction()` as a factory method, and synchronized `requirements.md`, the CRC and domain-model diagrams, and this record from Daniel's decisions and reasons. Daniel made all four decisions.
+- Claude Code ran the final engineering review and verification (Prompt 04) read-only on `main`. It reported WORKSHOP-08: PASSED with one advisory recommendation: update this section and End State to the final state.
+- Claude Code committed the work, created `phase-08-v1`, `phase-08-completed`, and `phase-08-final`, opened the pull requests, and merged #22, #23, #24, and #25, all at Daniel's request.
 
 ## End State
 
-- `phase-08-v1` points to `f671d07`, the V1 Builder. It is pushed to `origin`.
-- The Section 4 documentation, the README update (Phase 08 ✅), and this record are in the commit "Complete Phase 08 factory and builder", made after `phase-08-v1`. This record was written before the merge. A pull request from `workshop-08` into `main` was opened and not yet merged.
-- Since `phase-07-completed`, no pipeline tool outside `tools/models/` changed on `workshop-08`.
+- Pull requests merged into `main`, each with a merge commit:
+
+  | PR | Branch | Merge commit |
+  |---|---|---|
+  | #22 | `fix/reject-cross-pairs` | `db747ad` |
+  | #23 | `workshop-08` | `178e2f8` |
+  | #24 | `docs/readme-phase-08-status` | `323a7f6` |
+  | #25 | `workshop-08-review` | `cb349af` |
+
+- Tags, all annotated and pushed to `origin`:
+
+  | Tag | Commit |
+  |---|---|
+  | `phase-08-v1` | `f671d07`, the V1 Builder |
+  | `phase-08-completed` | `178e2f8`, the #23 merge |
+  | `phase-08-final` | `cb349af`, the #25 merge, after the Object Creation Review |
+
+- On `main` at `cb349af`, `pytest` gave 1003 passed and 0 failed, and `python -m tools.models.demo` exits 0.
+- Since `phase-07-completed`, the only pipeline tools outside `tools/models/` that changed are `calculate_lot_size.py` and `build_trade_plan.py`, both from the cross-pair fix (#22).
 
 ## Verification Confirmation
 
-To be completed by Daniel.
+Daniel verified Phase 08:
+
+- `crc.puml` and `domain-model.puml` render correctly in IntelliJ.
+- The full test suite passes (1003 tests).
+- The demo builds trade plans through `TradePlanBuilder`.
+- All four object-creation decisions are Daniel's, and Daniel approved every merge and tag.
