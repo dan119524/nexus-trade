@@ -11,6 +11,8 @@ class TradePlanBuilder:
     The caller passes in every value. The builder never reads files or calls OANDA,
     and it adds no rules: build() checks only that every part was given, and
     TradePlan's own constructor does all the validation.
+
+    Use one builder per plan.
     """
 
     def __init__(self):
