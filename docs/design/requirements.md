@@ -275,6 +275,14 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 | Require a lot size of at least 0.01, in steps of 0.01 (FR9) | |
 | Know its reference timeframe from its signal (FR9) | Signal |
 
+### TradePlanBuilder
+
+| Responsibilities | Collaborators |
+|---|---|
+| Collect a trade plan's signal, account, entry, stop loss, TP1, TP2, and lot size, one part at a time | |
+| Build the TradePlan, or reject a build with any part missing, naming the missing parts | TradePlan |
+| Add no rules of its own: the TradePlan it builds does all the validation | TradePlan |
+
 ### Account
 
 | Responsibilities | Collaborators |
@@ -378,3 +386,8 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 
 - Phase 04 made BuySetup and SellSetup subclasses of TradeSetup only to change the direction rules, while TradePlan, Order, and Trade still branched on the "buy" and "sell" strings for TP2, the units sign, and the R multiple. A new direction-dependent rule therefore had to be added in four or five places, and TradeSetup's constructor called a method that subclasses overrode before their own state existed (Phase 04 finding 6).
 - TradeSetup now holds a TradeDirection object and delegates to it, so every direction rule lives in BuyDirection or SellDirection, TradePlan, Order, and Trade ask the same object instead of branching, and the direction exists before the price-order check runs.
+
+## Object Creation
+
+- A TradePlan has seven parts. `TradePlanBuilder` (Phase 08, Builder) collects them one at a time and builds the TradePlan, so a plan is assembled step by step and a missing part is named. The caller passes every value: the builder reads no files and calls no API.
+- Direct construction stays everywhere else. Each other class has a short constructor with no optional parts, and `Signal.trade_direction()` is the only place in the domain that chooses between `BuyDirection` and `SellDirection`, so no Factory was added in Phase 08.

@@ -306,6 +306,26 @@ note right of TradePlan
   rounded to cents, computed in __init__. reference_timeframe comes from the signal.
 end note
 
+class TradePlanBuilder {
+  - _parts : dict[str, object]
+  + __init__()
+  .. methods (each returns the builder) ..
+  + signal(signal : Signal) : TradePlanBuilder
+  + account(account : Account) : TradePlanBuilder
+  + entry(entry : float) : TradePlanBuilder
+  + stop_loss(stop_loss : float) : TradePlanBuilder
+  + take_profit_1(take_profit_1 : float) : TradePlanBuilder
+  + take_profit_2(take_profit_2 : float) : TradePlanBuilder
+  + lot_size(lot_size : float) : TradePlanBuilder
+  + build() : TradePlan
+}
+
+note right of TradePlanBuilder
+  Builder (Phase 08). build() raises ValueError naming any part
+  that was never given, then returns TradePlan(**parts);
+  TradePlan's constructor does all the validation.
+end note
+
 class Order {
   - _plan : TradePlan
   - _account : Account
@@ -341,6 +361,7 @@ TradePlan "0..1" --> "1" Signal : is based on >
 TradePlan "1" *--> "1" TradeSetup : owns >
 TradePlan "0..*" --> "1" Account : is sized for >
 Order "0..1" --> "1" TradePlan : is created from >
+TradePlanBuilder ..> TradePlan : builds >
 Order "0..*" --> "1" Account : is for >
 Trade "0..1" --> "1" Order : is opened by >
 Account "1" o--> "0..*" Trade : records >

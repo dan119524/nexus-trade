@@ -162,6 +162,15 @@ class TradePlan {
   Account
 }
 
+class TradePlanBuilder {
+  .. Responsibilities ..
+  Collect a trade plan's signal, account, entry, stop loss, TP1, TP2, and lot size, one part at a time
+  Build the TradePlan, or reject a build with any part missing, naming the missing parts
+  Add no rules of its own: the TradePlan it builds does all the validation
+  .. Collaborators ..
+  TradePlan
+}
+
 class Account {
   .. Responsibilities ..
   Know its account ID, balance, and currency
