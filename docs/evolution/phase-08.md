@@ -183,4 +183,9 @@ Daniel decided:
 
 ## Verification Confirmation
 
-To be completed by Daniel.
+Daniel verified Phase 08:
+
+- `crc.puml` and `domain-model.puml` render correctly in IntelliJ.
+- The full test suite passes (1003 tests).
+- The demo builds trade plans through `TradePlanBuilder`.
+- All four object-creation decisions are his, and he approved every merge and tag.
