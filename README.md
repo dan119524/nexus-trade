@@ -85,7 +85,7 @@ Domain classes live in `tools/models/`. Design diagrams live in `docs/design/`.
 | Composition & delegation | `TradeSetup` delegates its direction rules to its `TradeDirection` (replacing the Phase 04 `BuySetup`/`SellSetup` subclasses); `TradePlan` creates and owns its `TradeSetup` | Implemented (Phases 05–06) |
 | Collections | `BacktestResult` → `TradeSetup`, `CurrencyPair` → `BacktestResult` (FR4 ranking with `rank_pairs`), `Account` → `Trade` (FR11), as private typed lists | Implemented (Phase 06) |
 | Orders | `Order` supports market orders only, on a practice account, after explicit confirmation | Implemented (Phase 05) |
-| Factory | `OrderFactory` creates orders | Planned (Phase 08) |
+| Factory | `OrderFactory` creates orders | Deferred (Phase 09/10) |
 | Builder | `TradePlanBuilder` assembles entry, SL, TP, and size step by step | Planned (Phase 08) |
 | Adapter | `OandaAdapter` implements a `BrokerGateway` interface, so a `FakeBroker` can be swapped in for tests | Planned (Phase 09) |
 | Facade | `TradingFacade` exposes one simple call for the whole pipeline | Planned (Phase 09) |
