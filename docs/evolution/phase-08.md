@@ -133,8 +133,8 @@ Daniel decided:
 |---|---|---|
 | More Factory or Builder in Phase 08? | No | `TradePlan` was the only hard constructor and it has the builder; the rest are clear or wait for the Phase 09 conversion. |
 | `Trade` | Keep the direct constructor; record open/closed creation methods as a future candidate | It already rejects invalid open/closed combinations, and changing 42 call sites is not worth it. |
-| `Signal.trade_direction()` | Describe it as a factory method in the CRC, UML, and this record || Not stated |
-| `TradePlan` in the demo and tests | `demo.py` uses only `TradePlanBuilder`; tests keep direct `TradePlan(...)` calls || Not stated |
+| `Signal.trade_direction()` | Describe it as a factory method in the CRC, UML, and this record | `trade_direction()` already works as a factory method: it picks Buy or Sell in one place, and callers never see the concrete type, so the docs should say so. |
+| `TradePlan` in the demo and tests | `demo.py` uses only `TradePlanBuilder`; tests keep direct `TradePlan(...)` calls | The demo shows the intended way to make a plan, so it uses the builder. Tests keep direct calls to check `TradePlan`'s own validation. |
 
 ### Implementation
 
