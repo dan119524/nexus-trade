@@ -8,7 +8,7 @@ from datetime import date, datetime, timezone
 from tools.models import (
     Account, BacktestResult, BreakOfStructure, BuyDirection, Candle, ChangeOfCharacter, CurrencyPair,
     Order, SellDirection, Signal, StructureEvent, SwingPoint, Timeframe, TimeframeAnalysis, Trade,
-    TradeDirection, TradePlan, TradePlanBuilder, TradeSetup, evaluate_setup, rank_pairs,
+    TradeDirection, TradePlanBuilder, TradeSetup, evaluate_setup, rank_pairs,
 )
 
 
@@ -113,8 +113,8 @@ def main():
     print(f"Account {account.account_id} ({account.environment}): balance {account.balance} "
           f"{account.currency}, risk {account.risk_percent}% -> max risk {account.max_risk_amount()}")
 
-    plan = TradePlan(signal, account, entry=1.0900, stop_loss=1.0850, take_profit_1=1.1000,
-                     take_profit_2=1.1050, lot_size=0.1)
+    plan = (TradePlanBuilder().signal(signal).account(account).entry(1.0900).stop_loss(1.0850)
+            .take_profit_1(1.1000).take_profit_2(1.1050).lot_size(0.1).build())
     print(f"TradePlan owns a {plan.setup.direction} TradeSetup: entry {plan.setup.entry}, "
           f"stop loss {plan.setup.stop_loss}, TP1 {plan.setup.take_profit}, TP2 {plan.take_profit_2}, "
           f"R:R {plan.setup.reward_to_risk():.2f}, reference {plan.reference_timeframe.value} (from the signal)")
@@ -204,18 +204,18 @@ def main():
     try:
         tie = Signal(m1, m5, TimeframeAnalysis(eur_usd, Timeframe.H1, "downtrend"),
                      TimeframeAnalysis(eur_usd, Timeframe.H4, "downtrend"))
-        TradePlan(tie, account, entry=1.0900, stop_loss=1.0850, take_profit_1=1.1000,
-                  take_profit_2=1.1050, lot_size=0.1)
+        (TradePlanBuilder().signal(tie).account(account).entry(1.0900).stop_loss(1.0850)
+         .take_profit_1(1.1000).take_profit_2(1.1050).lot_size(0.1).build())
     except ValueError as error:
         print(f"Rejected trade plan for a tied signal: {error}")
     try:
-        TradePlan(signal, account, entry=1.0900, stop_loss=1.0850, take_profit_1=1.0990,
-                  take_profit_2=1.1050, lot_size=0.1)
+        (TradePlanBuilder().signal(signal).account(account).entry(1.0900).stop_loss(1.0850)
+         .take_profit_1(1.0990).take_profit_2(1.1050).lot_size(0.1).build())
     except ValueError as error:
         print(f"Rejected trade plan with R:R 1.8: {error}")
     try:
-        TradePlan(signal, account, entry=1.0900, stop_loss=1.0850, take_profit_1=1.1000,
-                  take_profit_2=1.1050, lot_size=1.0)
+        (TradePlanBuilder().signal(signal).account(account).entry(1.0900).stop_loss(1.0850)
+         .take_profit_1(1.1000).take_profit_2(1.1050).lot_size(1.0).build())
     except ValueError as error:
         print(f"Rejected trade plan risking $500 (1.0 lot x 50 pips x $10): {error}")
     try:
