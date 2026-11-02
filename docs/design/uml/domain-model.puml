@@ -252,6 +252,12 @@ class Signal {
   + reference_timeframe() : Timeframe | None
 }
 
+note right of Signal
+  trade_direction() is a factory method (Phase 08): it creates a
+  BuyDirection when bullish or a SellDirection when bearish, so callers
+  get a TradeDirection without choosing the concrete type.
+end note
+
 ' ---------- Plans, orders, trades, and the account ----------
 
 class Account {

@@ -257,7 +257,7 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 | Know its score: the number of timeframes voting its direction (0 when it has no direction) | |
 | Know its minimum confluence score, a whole number from 1 to 4 (default 3) | |
 | Know whether it is valid: it has a direction and its score is at least the minimum (FR8) | |
-| Know its trade direction: a BuyDirection when bullish, a SellDirection when bearish, none with no direction | TradeDirection |
+| Create its trade direction (factory method, `trade_direction()`): a BuyDirection when bullish, a SellDirection when bearish, none with no direction | TradeDirection |
 | Know its reference timeframe: the highest timeframe that voted with its direction, in the order H4, H1, M5, M1 (FR9) | Timeframe |
 
 ### TradePlan
@@ -390,4 +390,6 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 ## Object Creation
 
 - A TradePlan has seven parts. `TradePlanBuilder` (Phase 08, Builder) collects them one at a time and builds the TradePlan, so a plan is assembled step by step and a missing part is named. The caller passes every value: the builder reads no files and calls no API.
-- Direct construction stays everywhere else. Each other class has a short constructor with no optional parts, and `Signal.trade_direction()` is the only place in the domain that chooses between `BuyDirection` and `SellDirection`, so no Factory was added in Phase 08.
+- `Signal.trade_direction()` is a factory method: it is the only place in the domain that chooses between `BuyDirection` and `SellDirection`, and its callers (such as `TradePlan`) get a `TradeDirection` without knowing the concrete type. No separate Factory class was added in Phase 08.
+- Direct construction stays everywhere else. Each other constructor is short and clear, or its objects will be created from pipeline data only after the Phase 09 conversion.
+- `Trade` keeps its direct constructor. It rejects an open trade with an exit price and a closed trade without one; separate creation methods for open and closed trades are a candidate for a later phase.

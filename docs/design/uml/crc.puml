@@ -134,7 +134,7 @@ class Signal {
   Know its score: the number of timeframes voting its direction (0 when it has no direction)
   Know its minimum confluence score, a whole number from 1 to 4 (default 3)
   Know whether it is valid: it has a direction and its score is at least the minimum (FR8)
-  Know its trade direction: a BuyDirection when bullish, a SellDirection when bearish, none with no direction
+  Create its trade direction (factory method, trade_direction()): a BuyDirection when bullish, a SellDirection when bearish, none with no direction
   Know its reference timeframe: the highest timeframe that voted with its direction, in the order H4, H1, M5, M1 (FR9)
   .. Collaborators ..
   TimeframeAnalysis

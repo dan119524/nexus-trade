@@ -90,7 +90,66 @@ The final review reported PHASE-08: PASSED, with two advisory recommendations:
 |---|---|
 | 09 | Switch `build_trade_plan` to `TradePlanBuilder`, which needs the pipeline dicts turned into domain objects (Adapter). `calculate_sl_tp` can then use `TradeSetup` and `TradeDirection`. |
 | 09/10 | The four tool branches on `bullish`/`bearish` (`calculate_sl_tp`, `execute_trade`, `simulate_signals`, `build_trade_plan`) could use `TradeDirection`, with a direction factory if there is then more than one creation site. |
+| Later | `Trade` could get separate creation methods for open and closed trades (Object Creation Review). |
 | Open | Whether TP1 should come from market structure (from Phase 07). |
+
+## After the Merge
+
+- Commit `f2a7235` on `workshop-08`: the README roadmap row for Phase 08 lists only `TradePlanBuilder`, and the `TradePlanBuilder` docstring says to use one builder per plan (final review recommendation 1).
+- Pull request #22 was merged into `main` (merge commit `db747ad`), then pull request #23 (merge commit `178e2f8`). `pytest` on `main` gave 992 passed after #22 and 1003 passed after #23.
+- `phase-08-completed` (annotated) points to `178e2f8` and is pushed to `origin`.
+- Commit `0dd25d6` on `main`: the README design-pattern table marks `OrderFactory` as Deferred (Phase 09/10).
+- Pull request #24 (`docs/readme-phase-08-status`, merge commit `323a7f6`): the README design-pattern table marks `TradePlanBuilder` as Implemented (Phase 08).
+
+## Object Creation Review (Prompt 03, `workshop-08-review`)
+
+### Start
+
+- The V1 checkpoint (Prompt 02) was run read-only against `main` at `323a7f6` and reported READY. Its Java/Maven checks were run as `python -m tools.models.demo` and `pytest` (1003 passed).
+- The branch `workshop-08-review` was created from `main` at `323a7f6`. The V1 handoff was confirmed by the annotated tag `phase-08-v1` on `origin`, pointing to `f671d07`.
+
+### Review
+
+Claude Code reviewed every place a domain object is created. Domain objects are created only in `tools/models/`, `demo.py`, and the tests; the pipeline tools still pass dicts, which Daniel had already placed in Phase 09 (Adapter). `OrderFactory` stays deferred to Phase 09/10.
+
+| Creation site | Recommendation |
+|---|---|
+| `TradePlan` (7 parts) | Builder, already applied in V1 |
+| `TradeSetup` inside `TradePlan` | Direct (composition: the owner creates its part) |
+| `Signal.trade_direction()` choosing `BuyDirection` or `SellDirection` | Keep; it is already a factory method |
+| `TradeSetup` with an explicit direction in the demo and tests | Direct |
+| BOS or CHoCH choice in `detect_bos_choch.py` (dicts) | Keep; revisit after the Phase 09 conversion |
+| `Candle` (9 required values) | Direct; its real source is OANDA data (Phase 09) |
+| `Trade` (outcome with an optional exit price) | Direct; weak candidate for open/closed creation methods |
+| `Order` | Deferred (`OrderFactory`, Phase 09/10) |
+| `Account` | Direct; the explicit practice environment is a safety check |
+| `Signal`, `CurrencyPair`, `BacktestResult`, `SwingPoint`, `TimeframeAnalysis`, `BreakOfStructure`, `ChangeOfCharacter` | Direct |
+
+### Decisions
+
+Daniel decided:
+
+| Question | Decision | Reason |
+|---|---|---|
+| More Factory or Builder in Phase 08? | No | `TradePlan` was the only hard constructor and it has the builder; the rest are clear or wait for the Phase 09 conversion. |
+| `Trade` | Keep the direct constructor; record open/closed creation methods as a future candidate | It already rejects invalid open/closed combinations, and changing 42 call sites is not worth it. |
+| `Signal.trade_direction()` | Describe it as a factory method in the CRC, UML, and this record || Not stated |
+| `TradePlan` in the demo and tests | `demo.py` uses only `TradePlanBuilder`; tests keep direct `TradePlan(...)` calls || Not stated |
+
+### Implementation
+
+- `tools/models/demo.py`: the four direct `TradePlan(...)` calls (the main plan and the three rejection examples) now use `TradePlanBuilder`, and `TradePlan` is no longer imported. The demo's output is byte-identical to before.
+- No test changed. No new class was added.
+
+### Synchronization
+
+- `docs/design/requirements.md`: the `Signal` CRC card says it creates its trade direction with the factory method `trade_direction()`. The Object Creation section describes the factory method, corrects "no optional parts" (`Signal` has a default minimum score and `Trade` an optional exit price), and records the `Trade` decision. No FR changed.
+- `docs/design/uml/crc.puml`: the same `Signal` card change.
+- `docs/design/uml/domain-model.puml`: a note on `Signal` describing `trade_direction()` as a factory method. No relationship changed. PlantUML was not available to render the diagrams here.
+
+### Tests
+
+`pytest` gave 1003 passed and 0 failed. `python -m tools.models.demo` exits 0.
 
 ## AI Assistance
 
