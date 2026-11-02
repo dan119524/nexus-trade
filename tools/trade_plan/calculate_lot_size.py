@@ -9,11 +9,12 @@ Formula:
 Pip value per standard lot (100,000 units) in USD:
   - Quote currency USD (EUR/USD, GBP/USD, AUD/USD):  $10.00 per pip
   - Base currency USD  (USD/JPY, USD/CHF, USD/CAD):  10 / current_price per pip
-  - Cross pair         (EUR/GBP, GBP/JPY, EUR/JPY):  approximate via quote pip value
+  - Cross pair         (EUR/GBP, GBP/JPY, EUR/JPY):  no pip value until a real conversion exists (FR9)
 
 The risk percent must be greater than 0 and at most 2 (FR9).
 Lot size is capped at 100 and rounded down to 2 decimal places. If even the 0.01 minimum lot
-would risk more than the risk limit, there is no trade: a warning is logged and None is returned.
+would risk more than the risk limit, or the pair is a cross pair, there is no trade: a warning is
+logged and None is returned.
 """
 
 import math
@@ -45,6 +46,8 @@ def pip_value_per_lot(pair: str, price: float) -> float:
     Args:
         pair:  e.g. "EUR_USD"
         price: Current mid price (used for USD-base pairs).
+
+    Raises ValueError for a cross pair: there is no pip value until a real conversion exists (FR9).
     """
     if pair in _USD_QUOTE_PAIRS:
         return 10.0  # always $10/pip/lot for USD-quote majors
@@ -52,13 +55,7 @@ def pip_value_per_lot(pair: str, price: float) -> float:
         if pair == "USD_JPY":
             return round(1_000 / price, 4)  # 0.01 pip × 100,000 / price
         return round(10.0 / price, 4)
-    else:
-        # Cross pair — approximate: 1 pip ≈ $10 (acceptable for initial sizing)
-        log.warning(
-            f"Pair {pair} is a cross pair. Using approximate pip value of $10/lot. "
-            "Refine for production."
-        )
-        return 10.0
+    raise ValueError(f"{pair} is a cross pair: no pip value until a real conversion exists (FR9)")
 
 
 def calculate_lot_size(
@@ -80,7 +77,7 @@ def calculate_lot_size(
 
     Returns:
         Dict with lot_size, risk_amount, pip_val, and derived fields, or None when even the
-        0.01 minimum lot would risk more than risk_amount (no trade).
+        0.01 minimum lot would risk more than risk_amount, or the pair is a cross pair (no trade).
     """
     if sl_pips <= 0:
         raise ValueError(f"sl_pips must be positive, got {sl_pips}")
@@ -88,6 +85,10 @@ def calculate_lot_size(
         raise ValueError(f"risk_percent must be greater than 0 and at most 2, got {risk_percent}")
     if account_balance <= 0:
         raise ValueError(f"account_balance must be positive, got {account_balance}")
+
+    if pair not in _USD_QUOTE_PAIRS and pair not in _USD_BASE_PAIRS:
+        log.warning(f"No trade: {pair} is a cross pair, no pip value until a real conversion exists (FR9).")
+        return None
 
     risk_amount = round(account_balance * (risk_percent / 100), 2)
     pip_val = pip_value_per_lot(pair, entry_price)

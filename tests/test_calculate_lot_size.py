@@ -416,3 +416,28 @@ def test_build_trade_plan_never_sizes_against_10000_when_the_fetch_fails(tmp_pat
 
     btp.build_trade_plan("EUR_USD", risk_percent=1.0)
     assert sized == []
+
+
+# ── Cross pairs rejected (FR9) ────────────────────────────────────────────────
+
+@pytest.mark.parametrize("pair", ["EUR_GBP", "GBP_JPY", "EUR_JPY", "AUD_NZD"])
+def test_cross_pair_has_no_pip_value(pair):
+    from tools.trade_plan.calculate_lot_size import pip_value_per_lot
+    with pytest.raises(ValueError, match="cross pair"):
+        pip_value_per_lot(pair, 1.0)
+
+
+@pytest.mark.parametrize("pair", ["EUR_GBP", "GBP_JPY", "EUR_JPY", "AUD_NZD"])
+def test_cross_pair_gets_no_lot_size(pair):
+    from tools.trade_plan.calculate_lot_size import calculate_lot_size
+    assert calculate_lot_size(10_000, 1.0, 20, pair, 1.0) is None
+
+
+def test_build_trade_plan_writes_no_plan_for_a_cross_pair(tmp_path, monkeypatch):
+    from tools.utils.file_io import read_json
+    # The same files and $10,000 account that give EUR_USD a 0.09-lot plan
+    btp, signal_path = _plan_files(tmp_path, monkeypatch, balance=10_000)
+    before = read_json(signal_path)
+
+    assert btp.build_trade_plan("EUR_GBP", risk_percent=1.0) is None
+    assert read_json(signal_path) == before

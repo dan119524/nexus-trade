@@ -146,7 +146,7 @@ def build_trade_plan(
         entry_price=entry,
     )
     if sizing is None:
-        log.warning(f"Setup rejected: even the minimum lot exceeds the risk limit for {pair}.")
+        log.warning(f"Setup rejected: no lot size for {pair} (cross pair, or the minimum lot exceeds the risk limit).")
         return None
 
     # ── Build invalidation note ────────────────────────────────────────────────
