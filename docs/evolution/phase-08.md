@@ -188,4 +188,4 @@ Daniel verified Phase 08:
 - `crc.puml` and `domain-model.puml` render correctly in IntelliJ.
 - The full test suite passes (1003 tests).
 - The demo builds trade plans through `TradePlanBuilder`.
-- All four object-creation decisions are his, and he approved every merge and tag.
+- All four object-creation decisions are Daniel's, and Daniel approved every merge and tag.
