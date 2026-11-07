@@ -201,28 +201,13 @@ def _check_trade_milestones(open_entries: list[dict], oanda_open: list[dict]) ->
         return
     try:
         from tools.reporting.email_report import send_trade_status_email
-        import os
-        from oandapyV20 import API
-        from oandapyV20.endpoints.pricing import PricingInfo
-        from tools.utils.validators import require_practice_env
+        from tools.oanda.execute_trade import get_mid_prices
 
-        api_key    = os.getenv("OANDA_API_KEY")
-        account_id = os.getenv("OANDA_ACCOUNT_ID")
-        require_practice_env(os.getenv("OANDA_ENV", "practice"))
-        client     = API(access_token=api_key, environment="practice")
-
-        instruments = ",".join({e.get("pair", "") for e in open_entries if e.get("pair")})
-        if not instruments:
+        pairs = sorted({e.get("pair", "") for e in open_entries if e.get("pair")})
+        if not pairs:
             return
 
-        req = PricingInfo(accountID=account_id, params={"instruments": instruments})
-        client.request(req)
-        prices = {}
-        for p in req.response.get("prices", []):
-            bid = float(p["bids"][0]["price"]) if p.get("bids") else None
-            ask = float(p["asks"][0]["price"]) if p.get("asks") else None
-            if bid and ask:
-                prices[p["instrument"]] = (bid + ask) / 2
+        prices = get_mid_prices(pairs)
 
         milestones = _load_milestones()
         changed    = False
@@ -295,13 +280,9 @@ def _poll_closed_trades() -> None:
         if not open_entries:
             return
 
-        from tools.oanda.execute_trade import _build_client
-        from oandapyV20.endpoints import trades as oanda_trades
+        from tools.oanda.execute_trade import get_open_trades, get_trade_details
 
-        client, account_id = _build_client()
-        req = oanda_trades.OpenTrades(accountID=account_id)
-        client.request(req)
-        oanda_open = req.response.get("trades", [])
+        oanda_open = get_open_trades()
         open_ids   = {t["id"] for t in oanda_open}
 
         # Check progress milestones for still-open trades
@@ -315,9 +296,7 @@ def _poll_closed_trades() -> None:
 
             # Trade is no longer open on OANDA — fetch its details
             try:
-                req2 = oanda_trades.TradeDetails(accountID=account_id, tradeID=tid)
-                client.request(req2)
-                t = req2.response.get("trade", {})
+                t = get_trade_details(tid)
 
                 pnl        = float(t.get("realizedPL", 0))
                 exit_price = float(t.get("averageClosePrice") or t.get("price") or 0)

@@ -357,6 +357,54 @@ class Trade {
   + r_multiple() : float | None
 }
 
+' ---------- Structural design (Phase 09) ----------
+
+interface CandleSource {
+  + {abstract} candles() : list[Candle]
+}
+
+note right of CandleSource
+  Interface (ABC, Phase 09): a bare CandleSource
+  cannot be created.
+end note
+
+class OandaCandleAdapter {
+  - _response : dict
+  - _pair : CurrencyPair
+  - _timeframe : Timeframe
+  + __init__(response : dict, pair : CurrencyPair)
+  .. methods ..
+  + candles() : list[Candle]
+}
+
+note right of OandaCandleAdapter
+  Adapter (Phase 09): translates an OANDA candle response
+  ("instrument", "granularity", time strings, "mid" o/h/l/c strings)
+  into Candle objects. Skips incomplete candles.
+  Module function: + parse_oanda_time(text) : datetime
+end note
+
+class PipelineAdapter {
+  - _analysis : dict
+  - _candles : dict[str, list[dict]]
+  - _pair : CurrencyPair
+  + __init__(pair_name : str, analysis : dict, candles_by_timeframe : dict, price_timeframe : str)
+  .. methods ..
+  + pair() : CurrencyPair
+  + signal(min_score : int = 3) : Signal
+  + account(account_data : dict, risk_percent : float) : Account
+  - _timeframe_analysis(timeframe : Timeframe) : TimeframeAnalysis
+  - _latest_event(timeframe : Timeframe, data : dict) : StructureEvent | None
+}
+
+note right of PipelineAdapter
+  Adapter (Phase 09): translates the pipeline's analysis,
+  candle, and account dicts into domain objects.
+  bullish/bearish/ranging -> uptrend/downtrend/ranging;
+  BOS -> BreakOfStructure, CHoCH -> ChangeOfCharacter.
+  Used by tools/trade_plan/build_trade_plan.py with TradePlanBuilder.
+end note
+
 CurrencyPair "1" <-- "0..*" Candle : has >
 CurrencyPair "1" <-- "0..*" SwingPoint : has >
 CurrencyPair "1" <-- "0..*" TimeframeAnalysis : has >
@@ -368,6 +416,16 @@ TradePlan "1" *--> "1" TradeSetup : owns >
 TradePlan "0..*" --> "1" Account : is sized for >
 Order "0..1" --> "1" TradePlan : is created from >
 TradePlanBuilder ..> TradePlan : builds >
+CandleSource <|.. OandaCandleAdapter
+CandleSource ..> Candle : returns >
+OandaCandleAdapter ..> Candle : creates >
+OandaCandleAdapter --> "1" CurrencyPair : for >
+PipelineAdapter --> "1" CurrencyPair : creates and holds >
+PipelineAdapter ..> Signal : creates >
+PipelineAdapter ..> TimeframeAnalysis : creates >
+PipelineAdapter ..> SwingPoint : creates >
+PipelineAdapter ..> StructureEvent : creates >
+PipelineAdapter ..> Account : creates >
 Order "0..*" --> "1" Account : is for >
 Trade "0..1" --> "1" Order : is opened by >
 Account "1" o--> "0..*" Trade : records >

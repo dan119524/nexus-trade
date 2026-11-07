@@ -314,6 +314,29 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 | Know its exit price once closed | |
 | Know its R multiple (FR11): the price move from entry to exit in its trade direction, divided by its setup's risk; none while open | TradeDirection |
 
+### CandleSource (interface)
+
+| Responsibilities | Collaborators |
+|---|---|
+| Define how NEXUS gets candles: candles() returns complete Candle objects, oldest first | Candle |
+
+### OandaCandleAdapter
+
+| Responsibilities | Collaborators |
+|---|---|
+| Be a CandleSource for one OANDA candle response and one CurrencyPair | CandleSource, CurrencyPair |
+| Reject a response for a different instrument or a granularity that is not a Timeframe | Timeframe |
+| Translate OANDA's time strings and "mid" o/h/l/c price strings into Candle objects; skip incomplete candles (FR6) | Candle |
+
+### PipelineAdapter
+
+| Responsibilities | Collaborators |
+|---|---|
+| Build a CurrencyPair from one timeframe's candle dicts (its price data) | CurrencyPair |
+| Build a Signal from the analysis dict: translate bullish/bearish/ranging trends into uptrend/downtrend/ranging, and the most recent BOS or CHoCH into a StructureEvent on a SwingPoint; a missing timeframe is ranging with no event (FR8, FR12) | Signal, TimeframeAnalysis, SwingPoint, BreakOfStructure, ChangeOfCharacter |
+| Build an Account from fetch_account's dict and the risk percent (FR5, FR9) | Account |
+| Read no files and call no API | |
+
 ### rank_pairs (function)
 
 | Responsibilities | Collaborators |
@@ -376,6 +399,7 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 | Interface | Abstract method | Implemented by | Used through the interface by | Requirement |
 |---|---|---|---|---|
 | TradeDirection | name, check_price_order(), reward(), risk(), outcome(), is_beyond(), units_sign | BuyDirection, SellDirection | TradeSetup (delegation), TradePlan (is_beyond for TP2), Order and Trade (units_sign) | FR2, FR3, FR9, FR10, FR11 |
+| CandleSource | candles() | OandaCandleAdapter | demo.py (Phase 09) | FR6 |
 
 - TradeSetup.outcome() returns its direction's outcome for the setup's stop loss and take profit on its currency pair's price data. evaluate_setup(setup: TradeSetup) still accepts any TradeSetup and returns its outcome, without knowing its direction.
 - outcome() returns "win", "loss", or "open" by reading the setup's currency pair price data from the first price point.
@@ -391,5 +415,12 @@ From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_s
 
 - A TradePlan has seven parts. `TradePlanBuilder` (Phase 08, Builder) collects them one at a time and builds the TradePlan, so a plan is assembled step by step and a missing part is named. The caller passes every value: the builder reads no files and calls no API.
 - `Signal.trade_direction()` is a factory method: it is the only place in the domain that chooses between `BuyDirection` and `SellDirection`, and its callers (such as `TradePlan`) get a `TradeDirection` without knowing the concrete type. No separate Factory class was added in Phase 08.
-- Direct construction stays everywhere else. Each other constructor is short and clear, or its objects will be created from pipeline data only after the Phase 09 conversion.
+- Direct construction stays everywhere else. Each other constructor is short and clear. From Phase 09, `build_trade_plan` creates `Signal` and `Account` objects from pipeline data through `PipelineAdapter` and builds its `TradePlan` with `TradePlanBuilder`.
 - `Trade` keeps its direct constructor. It rejects an open trade with an exit price and a closed trade without one; separate creation methods for open and closed trades are a candidate for a later phase.
+
+## Structural Design (Phase 09)
+
+- **Adapter: `OandaCandleAdapter`.** OANDA describes a candle with an "instrument" and a "granularity" string, a time string with nanoseconds, and prices as "mid" o/h/l/c strings. `OandaCandleAdapter` implements the `CandleSource` interface and turns one OANDA response into `Candle` objects with a `CurrencyPair` and a `Timeframe`, so OANDA's format stays in one class.
+- **Adapter: `PipelineAdapter`.** The pipeline tools pass dicts, and their trend vocabulary (bullish, bearish, ranging) differs from `TimeframeAnalysis` (uptrend, downtrend, ranging). `PipelineAdapter` turns the analysis, candle, and account dicts into a `CurrencyPair`, a `Signal`, and an `Account`. `build_trade_plan` uses them with `TradePlanBuilder`, so every pipeline trade plan must pass `TradePlan`'s rules (FR2, FR9) before it is written.
+- **Facade: `tools/oanda/execute_trade.py`.** It is the scheduler's one entry point to OANDA: `get_open_trades()`, `get_trade_details()`, and `close_trade()` for trades, and `get_mid_prices()` for current prices. The scheduler's closed-trade and milestone checks use these instead of building their own OANDA client and calling OANDA's endpoints.
+- **Not changed:** `run_full_analysis()` already gives the analysis steps one entry point, and only `_scan_once` runs the scan steps, so no Facade was added for them. No adapter was added for `fetch_account` beyond `PipelineAdapter.account()`, because nothing else needs an `Account` from OANDA.

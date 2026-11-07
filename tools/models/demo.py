@@ -1,4 +1,4 @@
-"""Phase 06 demo. Run with: python -m tools.models.demo
+"""NEXUS demo (through Phase 09). Run with: python -m tools.models.demo
 
 Uses fixed example data only. It does not call the OANDA API.
 """
@@ -6,8 +6,8 @@ Uses fixed example data only. It does not call the OANDA API.
 from datetime import date, datetime, timezone
 
 from tools.models import (
-    Account, BacktestResult, BreakOfStructure, BuyDirection, Candle, ChangeOfCharacter, CurrencyPair,
-    Order, SellDirection, Signal, StructureEvent, SwingPoint, Timeframe, TimeframeAnalysis, Trade,
+    Account, BacktestResult, BreakOfStructure, BuyDirection, Candle, CandleSource, ChangeOfCharacter,
+    CurrencyPair, OandaCandleAdapter, Order, SellDirection, Signal, StructureEvent, SwingPoint, Timeframe, TimeframeAnalysis, Trade,
     TradeDirection, TradePlanBuilder, TradeSetup, evaluate_setup, rank_pairs,
 )
 
@@ -250,6 +250,41 @@ def main():
         TradePlanBuilder().signal(signal).account(account).entry(1.0900).stop_loss(1.0850).build()
     except ValueError as error:
         print(f"Rejected incomplete builder: {error}")
+
+    # Why Adapter: OANDA describes a candle in its own terms ("instrument" and "granularity" strings,
+    # and prices as "mid" o/h/l/c strings), but NEXUS works with Candle objects that hold a
+    # CurrencyPair and a Timeframe. Without a translation point, OANDA's format spreads through
+    # the analysis code as plain dicts. OandaCandleAdapter fixes this by making an OANDA response
+    # usable through NEXUS's own CandleSource interface, so the rest of NEXUS only sees Candle objects
+    # and OANDA's format lives in one class. Facade was less appropriate: the problem is an
+    # incompatible interface, not a complicated subsystem, and run_full_analysis() already gives
+    # the analysis steps a single entry point, so a Facade would only rename it.
+    print("\n== Adapter: OandaCandleAdapter turns an OANDA response into Candles (Phase 09) ==")
+    oanda_response = {  # fixed example in OANDA's format; no API call
+        "instrument": "EUR_USD",
+        "granularity": "H4",
+        "candles": [
+            {"time": "2026-10-15T14:00:00.000000000Z", "volume": 15210, "complete": True,
+             "mid": {"o": "1.08920", "h": "1.09110", "l": "1.08870", "c": "1.09050"}},
+            {"time": "2026-10-15T18:00:00.000000000Z", "volume": 18432, "complete": True,
+             "mid": {"o": "1.09050", "h": "1.09750", "l": "1.08980", "c": "1.09620"}},
+            {"time": "2026-10-15T22:00:00.000000000Z", "volume": 2031, "complete": False,
+             "mid": {"o": "1.09620", "h": "1.09700", "l": "1.09550", "c": "1.09600"}},
+        ],
+    }
+    source = OandaCandleAdapter(oanda_response, eur_usd)
+    print(f"OandaCandleAdapter is a CandleSource: {isinstance(source, CandleSource)}")
+    adapted = source.candles()
+    print(f"{len(oanda_response['candles'])} OANDA candles in -> {len(adapted)} Candle objects out "
+          f"(the incomplete one is skipped)")
+    for c in adapted:
+        print(f"  {type(c).__name__} {c.pair.name} {c.timeframe.value} at {c.time:%Y-%m-%d %H:%M}: "
+              f"O {c.open} H {c.high} L {c.low} C {c.close}, volume {c.volume}")
+    print(f"adapted candles share the existing CurrencyPair: {all(c.pair is eur_usd for c in adapted)}")
+    try:
+        OandaCandleAdapter({"instrument": "EUR_USD", "granularity": "D", "candles": []}, eur_usd)
+    except ValueError as error:
+        print(f"Rejected OANDA response: {error}")
 
 
 if __name__ == "__main__":
