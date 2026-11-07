@@ -9,7 +9,9 @@ Sequence:
   5. calculate_sl_tp()
   6. Gate: reject if RR < MIN_RISK_REWARD
   7. calculate_lot_size()
-  8. Attach trade plan to signal and write back to .tmp/signals/
+  8. TradePlanBuilder builds a domain TradePlan from the adapted Signal and Account;
+     reject if TradePlan rejects it (Phase 09)
+  9. Attach trade plan to signal and write back to .tmp/signals/
 
 Usage (CLI):
     python -m tools.trade_plan.build_trade_plan --pair EUR_USD
@@ -26,6 +28,7 @@ from tools.trade_plan.calculate_entry   import calculate_entry
 from tools.trade_plan.calculate_sl_tp   import calculate_sl_tp
 from tools.trade_plan.calculate_lot_size import calculate_lot_size
 from tools.oanda.fetch_account           import fetch_account
+from tools.models import PipelineAdapter, TradePlanBuilder
 from tools.utils.file_io import (
     get_signal_path, get_analysis_path,
     read_json, write_json, file_exists,
@@ -149,6 +152,28 @@ def build_trade_plan(
         log.warning(f"Setup rejected: no lot size for {pair} (cross pair, or the minimum lot exceeds the risk limit).")
         return None
 
+    # ── Domain check: TradePlanBuilder builds the TradePlan (Phase 09) ─────────
+    min_score = int(confluence.get("min_score_required") or os.getenv("MIN_CONFLUENCE_SCORE", 3))
+    candles_by_tf = {ref_tf: candles}
+    for tf in analysis["timeframes"]:
+        path = get_candle_path(pair, tf)
+        if tf not in candles_by_tf and file_exists(path):
+            candles_by_tf[tf] = read_json(path)
+    try:
+        adapter = PipelineAdapter(pair, analysis, candles_by_tf, price_timeframe=ref_tf)
+        plan = (TradePlanBuilder()
+                .signal(adapter.signal(min_score))
+                .account(adapter.account(account, risk_percent))
+                .entry(entry)
+                .stop_loss(sl_tp["stop_loss"])
+                .take_profit_1(sl_tp["take_profit_1"])
+                .take_profit_2(sl_tp["take_profit_2"])
+                .lot_size(sizing["lot_size"])
+                .build())
+    except (ValueError, KeyError, IndexError) as e:
+        log.warning(f"Setup rejected: TradePlan rejected the plan for {pair} ({e}). No plan written.")
+        return None
+
     # ── Build invalidation note ────────────────────────────────────────────────
     if direction == "bearish":
         invalidation = (
@@ -165,7 +190,7 @@ def build_trade_plan(
     trade_plan = {
         "pair": pair,
         "direction": direction,
-        "reference_timeframe": ref_tf,
+        "reference_timeframe": plan.reference_timeframe.value,
         "entry_price": entry,
         "stop_loss": sl_tp["stop_loss"],
         "take_profit_1": sl_tp["take_profit_1"],

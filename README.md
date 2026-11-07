@@ -87,8 +87,8 @@ Domain classes live in `tools/models/`. Design diagrams live in `docs/design/`.
 | Orders | `Order` supports market orders only, on a practice account, after explicit confirmation | Implemented (Phase 05) |
 | Factory | `OrderFactory` creates orders | Deferred (Phase 09/10) |
 | Builder | `TradePlanBuilder` assembles entry, SL, TP, and size step by step | Implemented (Phase 08) |
-| Adapter | `OandaAdapter` implements a `BrokerGateway` interface, so a `FakeBroker` can be swapped in for tests | Planned (Phase 09) |
-| Facade | `TradingFacade` exposes one simple call for the whole pipeline | Planned (Phase 09) |
+| Adapter | `OandaCandleAdapter` makes an OANDA candle response a `CandleSource`; `PipelineAdapter` turns the pipeline's dicts into a `Signal` and an `Account` for `TradePlanBuilder` | Implemented (Phase 09) |
+| Facade | `tools/oanda/execute_trade.py` is the scheduler's one entry point to OANDA trade lookups and prices | Implemented (Phase 09) |
 | MVC | Model = domain classes, View = React Native app, Controller = FastAPI routes | Planned (Phase 11) |
 
 ---
@@ -149,7 +149,7 @@ NEXUS Trade/
 | 06 | Growing the Object Model | Typed collections, composition over inheritance, full domain review | ✅ |
 | 07 | Evaluating OO Design | Design review notes in `docs/design/` | ✅ |
 | 08 | Factory and Builder | `TradePlanBuilder` | ✅ |
-| 09 | Adapter and Facade | `OandaAdapter`, `TradingFacade` | ⬜ |
+| 09 | Adapter and Facade | `OandaCandleAdapter`, `PipelineAdapter`, trade-lookup Facade in `execute_trade.py` | ✅ |
 | 10 | Refactoring and SOLID | Clean-up based on phase 07 review | ⬜ |
 | 11 | Architecture and MVC | FastAPI controllers + React Native views | ⬜ |
 | 12 | Testing and Evolution | pytest suite and backtesting engine | ⬜ |

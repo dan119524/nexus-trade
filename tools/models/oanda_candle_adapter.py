@@ -8,7 +8,7 @@ from tools.models.currency_pair import validate_pair
 from tools.models.timeframe import Timeframe
 
 
-def _parse_oanda_time(text):
+def parse_oanda_time(text):
     """Return an OANDA time such as "2026-10-15T18:00:00.000000000Z" as a UTC datetime."""
     if not isinstance(text, str) or not text.endswith("Z"):
         raise ValueError(f"time must be an OANDA UTC time string, got {text!r}")
@@ -38,7 +38,7 @@ class OandaCandleAdapter(CandleSource):
                 continue
             mid = raw["mid"]
             result.append(Candle(
-                self._pair, self._timeframe, _parse_oanda_time(raw["time"]),
+                self._pair, self._timeframe, parse_oanda_time(raw["time"]),
                 open_=float(mid["o"]), high=float(mid["h"]), low=float(mid["l"]), close=float(mid["c"]),
                 volume=raw["volume"], complete=True,
             ))

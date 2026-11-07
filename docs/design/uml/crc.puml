@@ -209,6 +209,41 @@ class Trade {
   TradeDirection
 }
 
+class "CandleSource (interface)" as CandleSource {
+  .. Responsibilities ..
+  Define how NEXUS gets candles: candles() returns complete Candle objects, oldest first
+  .. Collaborators ..
+  Candle
+}
+
+class OandaCandleAdapter {
+  .. Responsibilities ..
+  Be a CandleSource for one OANDA candle response and one CurrencyPair
+  Reject a response for a different instrument or a granularity that is not a Timeframe
+  Translate OANDA's time strings and "mid" o/h/l/c price strings into Candle objects; skip incomplete candles (FR6)
+  .. Collaborators ..
+  CandleSource
+  CurrencyPair
+  Timeframe
+  Candle
+}
+
+class PipelineAdapter {
+  .. Responsibilities ..
+  Build a CurrencyPair from one timeframe's candle dicts (its price data)
+  Build a Signal from the analysis dict: translate bullish/bearish/ranging trends into uptrend/downtrend/ranging, and the most recent BOS or CHoCH into a StructureEvent on a SwingPoint; a missing timeframe is ranging with no event (FR8, FR12)
+  Build an Account from fetch_account's dict and the risk percent (FR5, FR9)
+  Read no files and call no API
+  .. Collaborators ..
+  CurrencyPair
+  Signal
+  TimeframeAnalysis
+  SwingPoint
+  BreakOfStructure
+  ChangeOfCharacter
+  Account
+}
+
 class "rank_pairs (function)" as rank_pairs {
   .. Responsibilities ..
   Rank currency pairs by the win rate of each pair's most recent backtest result; pairs with no result or zero trades last; ties keep input order (FR4)

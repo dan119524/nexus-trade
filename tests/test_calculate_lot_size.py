@@ -254,9 +254,16 @@ def test_rr_gate_rejects_low_rr(fake_tmp, monkeypatch, rr, plan_expected):
     from unittest.mock import MagicMock
     monkeypatch.setenv("MIN_RISK_REWARD", "2.0")
 
-    # fake_tmp's H1 candle file is empty; build_trade_plan needs one candle for the entry
+    # fake_tmp's H1 candle file is empty; build_trade_plan needs candles for the entry, and
+    # (Phase 09) at least two for the CurrencyPair's price data
     candle = {"time": "2024-01-01T00:00:00Z", "open": 1.1, "high": 1.101, "low": 1.099, "close": 1.1, "volume": 100}
-    (fake_tmp / "candles" / "EUR_USD_H1.json").write_text(json.dumps([candle]))
+    (fake_tmp / "candles" / "EUR_USD_H1.json").write_text(json.dumps([candle, candle]))
+    # Phase 09: TradePlan rebuilds the signal from the analysis, so the analysis must agree
+    # with fake_tmp's bearish 3/4 signal (M1, M5, H1 bearish; H4 missing, so neutral)
+    analysis = {"pair": "EUR_USD", "timeframes": {
+        tf: {"trend": "bearish", "swing_highs": [], "swing_lows": [], "bos_events": []}
+        for tf in ("M1", "M5", "H1")}}
+    (fake_tmp / "analysis" / "EUR_USD_analysis.json").write_text(json.dumps(analysis))
 
     # calculate_sl_tp always returns rr_tp1 = 2.0, so mock it to drive the gate
     entry, sl_distance = 1.1, 0.002
@@ -268,7 +275,8 @@ def test_rr_gate_rejects_low_rr(fake_tmp, monkeypatch, rr, plan_expected):
         "risk_reward": rr,
     }
     monkeypatch.setattr("tools.trade_plan.build_trade_plan.calculate_sl_tp", lambda **kw: sl_tp)
-    fake_fetch_account = MagicMock(return_value={"balance": 10000.0})
+    fake_fetch_account = MagicMock(return_value={"account_id": "FAKE-ACCOUNT", "balance": 10000.0,
+                                                 "currency": "USD", "env": "practice"})
     monkeypatch.setattr("tools.trade_plan.build_trade_plan.fetch_account", fake_fetch_account)
 
     from tools.trade_plan.build_trade_plan import build_trade_plan
@@ -340,14 +348,21 @@ def _plan_files(tmp_path, monkeypatch, balance):
     signal = {"pair": "EUR_USD", "status": "pending_trade_plan", "trade_plan": None,
               "confluence": {"signal_valid": True, "direction": "bullish", "score": 3,
                              "votes": {"M1": "bullish", "M5": "bullish", "H1": "bullish", "H4": "neutral"}}}
-    analysis = {"timeframes": {"H1": {"swing_highs": [{"price": 1.0950}], "swing_lows": [{"price": 1.0800}]}}}
-    candles = [{"time": "2025-01-15T14:00:00Z", "open": 1.0890, "high": 1.0905, "low": 1.0885, "close": 1.0900}]
+    # Phase 09: the analysis agrees with the signal's votes (M1, M5, H1 bullish; H4 missing, so neutral),
+    # and there are two candles, because TradePlan rebuilds the signal and the CurrencyPair from them
+    analysis = {"timeframes": {
+        "M1": {"trend": "bullish"},
+        "M5": {"trend": "bullish"},
+        "H1": {"trend": "bullish", "swing_highs": [{"price": 1.0950}], "swing_lows": [{"price": 1.0800}]}}}
+    candle = {"time": "2025-01-15T14:00:00Z", "open": 1.0890, "high": 1.0905, "low": 1.0885, "close": 1.0900}
+    candles = [candle, candle]
     for path, data in ((signal_path, signal), (analysis_path, analysis), (candle_path, candles)):
         file_io.write_json(path, data)
     monkeypatch.setattr(btp, "get_signal_path", lambda pair: signal_path)
     monkeypatch.setattr(btp, "get_analysis_path", lambda pair: analysis_path)
     monkeypatch.setattr(file_io, "get_candle_path", lambda pair, tf: candle_path)
-    monkeypatch.setattr(btp, "fetch_account", lambda: {"balance": balance})
+    monkeypatch.setattr(btp, "fetch_account", lambda: {"account_id": "FAKE-ACCOUNT", "balance": balance,
+                                                       "currency": "USD", "env": "practice"})
     monkeypatch.setenv("MIN_RISK_REWARD", "2.0")
     return btp, signal_path
 
@@ -441,3 +456,24 @@ def test_build_trade_plan_writes_no_plan_for_a_cross_pair(tmp_path, monkeypatch)
 
     assert btp.build_trade_plan("EUR_GBP", risk_percent=1.0) is None
     assert read_json(signal_path) == before
+
+
+# ── Phase 09: TradePlanBuilder is the last gate ───────────────────────────────
+
+def test_build_trade_plan_writes_no_plan_when_the_analysis_gives_no_valid_signal(tmp_path, monkeypatch):
+    import tools.utils.file_io as file_io
+    from tools.utils.file_io import read_json
+    btp, signal_path = _plan_files(tmp_path, monkeypatch, balance=10_000)
+    # The signal file says bullish 3/4, but the analysis it came from has only one bullish timeframe
+    monkeypatch.setattr(btp, "get_analysis_path", lambda pair: str(tmp_path / "flat.json"))
+    file_io.write_json(str(tmp_path / "flat.json"), {"timeframes": {
+        "H1": {"trend": "bullish", "swing_highs": [{"price": 1.0950}], "swing_lows": [{"price": 1.0800}]}}})
+    before = read_json(signal_path)
+
+    assert btp.build_trade_plan("EUR_USD", risk_percent=1.0) is None
+    assert read_json(signal_path) == before
+
+
+def test_build_trade_plan_takes_the_reference_timeframe_from_the_domain_signal(tmp_path, monkeypatch):
+    btp, _ = _plan_files(tmp_path, monkeypatch, balance=10_000)
+    assert btp.build_trade_plan("EUR_USD", risk_percent=1.0)["trade_plan"]["reference_timeframe"] == "H1"

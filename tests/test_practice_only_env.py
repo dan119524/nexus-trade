@@ -133,7 +133,8 @@ def test_weekly_cycle_milestones_never_build_a_live_client(fake_keys, monkeypatc
 def test_weekly_cycle_milestones_use_practice(fake_keys, monkeypatch):
     from tools.scheduler.weekly_cycle import _check_trade_milestones
     monkeypatch.setenv("OANDA_ENV", "practice")
-    with patch("oandapyV20.API") as api, patch("oandapyV20.endpoints.pricing.PricingInfo") as info:
+    # Phase 09: the milestone check gets prices through execute_trade, which builds the client
+    with patch("tools.oanda.execute_trade.API") as api, patch("oandapyV20.endpoints.pricing.PricingInfo") as info:
         info.return_value = MagicMock(response={"prices": []})
         _check_trade_milestones([{"pair": "EUR_USD"}], [])
     api.assert_called_once_with(access_token="fake-key", environment="practice")

@@ -226,6 +226,32 @@ def get_closed_trades(count: int = 50) -> list[dict]:
     return req.response.get("trades", [])
 
 
+def get_trade_details(trade_id: str) -> dict:
+    """Fetch one trade (open or closed) by ID."""
+    client, account_id = _build_client()
+    req = oanda_trades.TradeDetails(accountID=account_id, tradeID=trade_id)
+    client.request(req)
+    return req.response.get("trade", {})
+
+
+def get_mid_prices(pairs: list[str]) -> dict[str, float]:
+    """Fetch the current mid price (average of bid and ask) for each pair. Pairs without both are left out."""
+    from oandapyV20.endpoints.pricing import PricingInfo
+
+    if not pairs:
+        return {}
+    client, account_id = _build_client()
+    req = PricingInfo(accountID=account_id, params={"instruments": ",".join(pairs)})
+    client.request(req)
+    prices = {}
+    for p in req.response.get("prices", []):
+        bid = float(p["bids"][0]["price"]) if p.get("bids") else None
+        ask = float(p["asks"][0]["price"]) if p.get("asks") else None
+        if bid and ask:
+            prices[p["instrument"]] = (bid + ask) / 2
+    return prices
+
+
 def close_trade(trade_id: str) -> dict | None:
     """Close a specific open trade by ID."""
     env = os.getenv("OANDA_ENV", "practice")
