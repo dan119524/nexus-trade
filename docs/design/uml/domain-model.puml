@@ -451,6 +451,10 @@ note as SharedHelpers
   in tools/models/currency_pair.py:
   + validate_pair_name(name) : str
       used by CurrencyPair
+  + pip_size_for(name) : float
+      used by CurrencyPair, calculate_sl_tp
+  + pip_value_for(name, price) : float
+      FR9 pip value rule; used by CurrencyPair, calculate_lot_size
   + validate_pair(pair) : CurrencyPair
       used by TradeSetup, BacktestResult, Candle, SwingPoint,
       TimeframeAnalysis, rank_pairs

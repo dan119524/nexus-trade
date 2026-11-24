@@ -4,7 +4,7 @@ Assemble a complete trade plan from a valid confluence signal.
 Sequence:
   1. Load signal from .tmp/signals/
   2. Fetch current account balance (no plan if it can't be fetched or is not above 0)
-  3. Load analysis for reference timeframe (H1)
+  3. Load analysis and candles; the domain Signal picks the reference timeframe
   4. calculate_entry()
   5. calculate_sl_tp()
   6. Gate: reject if RR < MIN_RISK_REWARD
@@ -38,19 +38,21 @@ from tools.utils.logger import get_logger
 load_dotenv()
 log = get_logger(__name__)
 
-# Reference timeframe for entry/SL placement (highest that voted in direction)
-_REFERENCE_TF_PRIORITY = ["H4", "H1", "M5", "M1"]
+def _reference_timeframe(pair: str, analysis: dict, candles_by_tf: dict, min_score: int) -> str | None:
+    """Return the domain Signal's reference timeframe for entry/SL placement (FR9), or None.
 
-
-def _pick_reference_tf(confluence: dict) -> str:
-    """Return the highest timeframe that voted with the signal direction."""
-    direction = confluence["direction"]
-    votes = confluence.get("votes", {})
-    for tf in _REFERENCE_TF_PRIORITY:
-        if votes.get(tf) == direction:
-            return tf
-    # Fallback: use H1
-    return "H1"
+    The votes read only trends and structure events, never prices, so the CurrencyPair can
+    take its price data from any loaded timeframe here; the one with the most candles is used.
+    """
+    if not candles_by_tf:
+        return None
+    price_tf = max(candles_by_tf, key=lambda tf: len(candles_by_tf[tf]))
+    try:
+        signal = PipelineAdapter(pair, analysis, candles_by_tf, price_timeframe=price_tf).signal(min_score)
+    except (ValueError, KeyError, IndexError):
+        return None
+    ref = signal.reference_timeframe()
+    return ref.value if ref is not None else None
 
 
 def build_trade_plan(
@@ -93,20 +95,30 @@ def build_trade_plan(
         return None
 
     analysis = read_json(analysis_path)
-    ref_tf = _pick_reference_tf(confluence)
-    tf_data = analysis["timeframes"].get(ref_tf)
+    min_score = int(confluence.get("min_score_required") or os.getenv("MIN_CONFLUENCE_SCORE", 3))
 
+    # Load candles for every analysed timeframe (entry price and the domain objects)
+    from tools.utils.file_io import get_candle_path
+    candles_by_tf = {}
+    for tf in analysis["timeframes"]:
+        path = get_candle_path(pair, tf)
+        if file_exists(path):
+            candles_by_tf[tf] = read_json(path)
+
+    # The domain Signal owns the reference timeframe rule (FR9)
+    ref_tf = _reference_timeframe(pair, analysis, candles_by_tf, min_score)
+    if ref_tf is None:
+        # Fallback: use H1
+        ref_tf = "H1"
+
+    tf_data = analysis["timeframes"].get(ref_tf)
     if not tf_data:
         log.error(f"No {ref_tf} data in analysis for {pair}.")
         return None
 
     log.info(f"Building trade plan for {pair} {direction} using {ref_tf} structure...")
 
-    # Load candles for entry price
-    from tools.utils.file_io import get_candle_path
-    candle_path = get_candle_path(pair, ref_tf)
-    candles = read_json(candle_path) if file_exists(candle_path) else []
-
+    candles = candles_by_tf.get(ref_tf, [])
     if not candles:
         log.error(f"No candles for {pair} {ref_tf}.")
         return None
@@ -153,12 +165,6 @@ def build_trade_plan(
         return None
 
     # ── Domain check: TradePlanBuilder builds the TradePlan (Phase 09) ─────────
-    min_score = int(confluence.get("min_score_required") or os.getenv("MIN_CONFLUENCE_SCORE", 3))
-    candles_by_tf = {ref_tf: candles}
-    for tf in analysis["timeframes"]:
-        path = get_candle_path(pair, tf)
-        if tf not in candles_by_tf and file_exists(path):
-            candles_by_tf[tf] = read_json(path)
     try:
         adapter = PipelineAdapter(pair, analysis, candles_by_tf, price_timeframe=ref_tf)
         plan = (TradePlanBuilder()

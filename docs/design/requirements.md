@@ -95,7 +95,7 @@ A TimeframeAnalysis casts its vote from its trend and its most recent structure 
 
 ## Pip Size and Pip Value
 
-From `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_size.py`.
+Owned by `tools/models/currency_pair.py` (`pip_size_for`, `pip_value_for`); used by `tools/trade_plan/calculate_sl_tp.py` and `tools/trade_plan/calculate_lot_size.py`.
 
 | Rule | Value |
 |---|---|

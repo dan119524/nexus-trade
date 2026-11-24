@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 _PAIR_NAME_PATTERN = re.compile(r"[A-Z]{3}_[A-Z]{3}")
 
-# Pip value rules from tools/trade_plan/calculate_lot_size.py (FR9)
+# Pip value rules (FR9), shared with tools/trade_plan/calculate_lot_size.py through pip_value_for()
 _USD_QUOTE_PAIRS = ("EUR_USD", "GBP_USD", "AUD_USD", "NZD_USD")
 _USD_BASE_PAIRS = ("USD_JPY", "USD_CHF", "USD_CAD", "USD_SGD")
 
@@ -29,6 +29,17 @@ def validate_pair_name(name):
 def pip_size_for(name):
     """Return the pip size for a pair name: 0.01 for a pair containing JPY, and 0.0001 otherwise."""
     return 0.01 if "JPY" in name else 0.0001
+
+
+def pip_value_for(name, price):
+    """Return the USD value of 1 pip per standard lot for a pair name at price. Raise ValueError for a cross pair (FR9)."""
+    if name in _USD_QUOTE_PAIRS:
+        return 10.0
+    if name == "USD_JPY":
+        return round(1_000 / price, 4)
+    if name in _USD_BASE_PAIRS:
+        return round(10.0 / price, 4)
+    raise ValueError(f"{name} is a cross pair; no pip value until a real conversion exists")
 
 
 def validate_pair(pair):
@@ -105,13 +116,7 @@ class CurrencyPair:
         price = to_price(price, "price")
         if price <= 0:
             raise ValueError(f"price must be greater than 0, got {price!r}")
-        if self._name in _USD_QUOTE_PAIRS:
-            return 10.0
-        if self._name == "USD_JPY":
-            return round(1_000 / price, 4)
-        if self._name in _USD_BASE_PAIRS:
-            return round(10.0 / price, 4)
-        raise ValueError(f"{self._name} is a cross pair; no pip value until a real conversion exists")
+        return pip_value_for(self._name, price)
 
     def _holds(self, result):
         return any(held is result for held in self._backtests)
