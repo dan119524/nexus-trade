@@ -58,7 +58,7 @@ Reviewed and left unchanged, with no code change proposed:
 
 - `docs/design/uml/domain-model.puml`: `pip_value_for` added to the `SharedHelpers` note. `pip_size_for` was added too; it already existed in the code but was missing from the diagram.
 - `docs/design/uml/crc.puml`: no change. `CurrencyPair` already knows its pip size and pip value.
-- `docs/design/requirements.md`: Daniel updates the source line above the "Pip Size and Pip Value" table himself, as AGENTS.md says the agent does not edit requirements. The rule values do not change.
+- `docs/design/requirements.md`: Daniel updated the source line above the "Pip Size and Pip Value" table himself, as AGENTS.md says the agent does not edit requirements. It now says the rules are owned by `currency_pair.py` (`pip_size_for`, `pip_value_for`) and used by `calculate_sl_tp.py` and `calculate_lot_size.py`. The rule values did not change.
 - Tests: no new tests. The existing pip value tests for `CurrencyPair` and `calculate_lot_size` cover both callers.
 
 ## Notes for Later Phases
@@ -66,3 +66,7 @@ Reviewed and left unchanged, with no code change proposed:
 - **Open: FR8 vote weighting.** `score_confluence` picks the majority direction from weighted votes (M1 = 1, M5 = 1, H1 = 2, H4 = 3), and `Signal` uses unweighted votes, as FR8 describes. They can pick opposite directions: H4 bullish against M1 and M5 bearish gives bullish in the tool and bearish in `Signal`. Whether FR8 should include weighting is a requirements decision for a later phase. (The tie case, where the tool picks bullish and `Signal` gives no direction, is already recorded in requirements.md.)
 - The H1 fallback in `build_trade_plan` could be replaced by rejecting a setup with no reference timeframe, in a separate commit.
 - R3 (splitting `build_trade_plan()`) was declined for this phase.
+- `docs/design/phase-07-review.md` marks three items "Planned for Phase 10". None was done in Phase 10, and all three remain open:
+  - Pair ranking in `tools/scheduler/weekly_cycle.py` moving to `rank_pairs`. The tool's ranking conflicts with FR4 (see Known Conflicts in requirements.md), so the move would change behavior and is not a behavior-preserving refactoring.
+  - The equity-curve logic in `tools/api/server.py` moving to `tools/reporting/`.
+  - The pipeline loop in `tools/oanda/stream_prices.py` moving to the scheduler, and its push notifications to their own module.
