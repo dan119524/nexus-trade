@@ -19,24 +19,15 @@ logged and None is returned.
 
 import math
 
+from tools.models.account import MAX_RISK_PERCENT
+from tools.models.currency_pair import pip_value_for
 from tools.utils.logger import get_logger
 
 log = get_logger(__name__)
 
-# Pairs where USD is the quote (pip value = $10/lot fixed)
-_USD_QUOTE_PAIRS = {
-    "EUR_USD", "GBP_USD", "AUD_USD", "NZD_USD",
-}
-
-# Pairs where USD is the base (pip value = 10 / price per lot)
-_USD_BASE_PAIRS = {
-    "USD_JPY", "USD_CHF", "USD_CAD", "USD_SGD",
-}
-
 _LOT_UNITS = 100_000  # 1 standard lot
 _MAX_LOT   = 100.0
 _MIN_LOT   = 0.01
-_MAX_RISK_PERCENT = 2.0  # FR9 cap, the same as Account
 
 
 def pip_value_per_lot(pair: str, price: float) -> float:
@@ -48,14 +39,9 @@ def pip_value_per_lot(pair: str, price: float) -> float:
         price: Current mid price (used for USD-base pairs).
 
     Raises ValueError for a cross pair: there is no pip value until a real conversion exists (FR9).
+    The rule itself lives in CurrencyPair's module (pip_value_for).
     """
-    if pair in _USD_QUOTE_PAIRS:
-        return 10.0  # always $10/pip/lot for USD-quote majors
-    elif pair in _USD_BASE_PAIRS:
-        if pair == "USD_JPY":
-            return round(1_000 / price, 4)  # 0.01 pip × 100,000 / price
-        return round(10.0 / price, 4)
-    raise ValueError(f"{pair} is a cross pair: no pip value until a real conversion exists (FR9)")
+    return pip_value_for(pair, price)
 
 
 def calculate_lot_size(
@@ -81,17 +67,18 @@ def calculate_lot_size(
     """
     if sl_pips <= 0:
         raise ValueError(f"sl_pips must be positive, got {sl_pips}")
-    if not (0 < risk_percent <= _MAX_RISK_PERCENT):
+    if not (0 < risk_percent <= MAX_RISK_PERCENT):
         raise ValueError(f"risk_percent must be greater than 0 and at most 2, got {risk_percent}")
     if account_balance <= 0:
         raise ValueError(f"account_balance must be positive, got {account_balance}")
 
-    if pair not in _USD_QUOTE_PAIRS and pair not in _USD_BASE_PAIRS:
+    try:
+        pip_val = pip_value_per_lot(pair, entry_price)
+    except ValueError:
         log.warning(f"No trade: {pair} is a cross pair, no pip value until a real conversion exists (FR9).")
         return None
 
     risk_amount = round(account_balance * (risk_percent / 100), 2)
-    pip_val = pip_value_per_lot(pair, entry_price)
     raw_lots = risk_amount / (sl_pips * pip_val)
 
     # Round down to 0.01 so the lot's risk never exceeds risk_amount; the tiny tolerance keeps
