@@ -1679,3 +1679,893 @@ Workshop 10 requires the accepted Workshop 09 state and remote workshop-09-compl
 
 Then stop.
 ```
+
+---
+
+# Workshop 10 Prompts
+
+## Workshop 10 Prompt 01 — Start Check
+
+```text
+Perform the Workshop 10 Start Check.
+
+This is a fast, read-only prerequisite check.
+
+Perform the runtime AGENTS integrity check required by AGENTS.md before substantive governed work.
+
+Do not review or modify student academic work.
+
+PREVIOUS WORKSHOP COMPLETION CHECK
+
+Verify the remote Git tag:
+
+workshop-09-completed
+
+1. Confirm that `workshop-09-completed` exists on the remote repository.
+
+2. Resolve the tag to the exact commit it identifies.
+
+3. Verify that the tagged commit belongs to the accepted history of protected remote `main`.
+
+Do not use the current working tree, local main, or an unaccepted development branch as evidence of Workshop 09 completion.
+
+If the tag is missing, report:
+
+WORKSHOP-10 START CHECK: BLOCKED
+
+Reason:
+Your Workshop 09 final completion tag could not be verified on GitHub. Workshop 09 must be completed and accepted before you can begin Workshop 10.
+
+Then stop.
+
+If the tag exists but does not identify a commit in the accepted protected main history, report:
+
+WORKSHOP-10 START CHECK: BLOCKED
+
+Reason:
+Your Workshop 09 completion tag does not identify accepted Workshop 09 work on main. You cannot begin Workshop 10 until Workshop 09 has been properly completed.
+
+Then stop.
+
+Do not check or evaluate historical Workshop 09 V1 or in-progress tags.
+
+Do not move, recreate, delete, overwrite, or repair any historical tag.
+
+WORKSHOP 10 READINESS
+
+Only after Workshop 09 completion is verified, check:
+
+1. The current branch is `workshop-10`.
+
+2. The Workshop 10 branch contains the accepted Workshop 09 completion commit in its history.
+
+3. The Workshop 10 branch was created from the accepted Workshop 09 state, without unrelated or unaccepted project changes.
+
+The Workshop 10 document and cumulative additions to `agents/PROMPTS.md` are expected Workshop setup changes.
+
+Do not classify these expected additions as unauthorized course-material modifications.
+
+Do not perform an academic review of Workshop 09.
+
+Do not evaluate code smells, refactoring opportunities, design patterns, tests, or implementation correctness.
+
+Do not modify files, branches, tags, or Git history.
+
+RESULT
+
+If a readiness requirement fails, report:
+
+WORKSHOP-10 START CHECK: BLOCKED
+
+Reason:
+<one concise student-facing explanation>
+
+Then stop.
+
+Do not search for additional problems after identifying the first blocker.
+
+If all checks pass, report exactly:
+
+WORKSHOP-09 COMPLETION: VERIFIED
+WORKSHOP-10 START CHECK: PASS
+
+Then stop.
+```
+
+---
+
+## Workshop 10 Prompt 02 — V1 Checkpoint
+
+```text
+Perform the Workshop 10 V1 Checkpoint.
+
+This is a fast, read-only minimum-validity check of the student's independently completed Workshop 10 work.
+
+Perform the runtime governance checks required by AGENTS.md.
+
+Do not perform an Engineering Review or modify student academic work.
+
+IN-CLASS REQUIREMENTS
+
+Inspect only the implementation and supporting evidence necessary to determine whether the student demonstrated minimum acceptable understanding of refactoring as behavior-preserving design improvement.
+
+Verify:
+
+1. The student identified one meaningful code smell or design problem supported by the actual implementation, such as duplicated logic, an oversized class or method, feature envy, repeated type decisions, or an unclear responsibility assignment.
+
+2. The student independently performed one focused refactoring that addresses the identified problem.
+
+3. The refactoring improves the internal structure, for example by improving cohesion, reducing unnecessary coupling, consolidating duplicated logic, clarifying responsibility assignment, or removing an unnecessary abstraction or repeated decision.
+
+4. The implementation represents an actual structural improvement rather than only renaming methods, moving code without changing ownership, or introducing unnecessary classes.
+
+5. The refactoring preserves the intended application behavior.
+
+6. The application still demonstrates the affected behavior through Main.java or the existing application run, and the cumulative Workshop tests pass.
+
+7. The production application builds successfully using the project's committed Maven Wrapper.
+
+Do not require the student to demonstrate all five SOLID principles during V1.
+
+Do not require a new class when an existing class can appropriately own the responsibility.
+
+Do not require a particular refactoring technique, code-smell name, or SOLID principle to be cited.
+
+Do not evaluate whether another refactoring would be preferable.
+
+Do not require the student to identify or fix every design problem in the application.
+
+Do not:
+
+- require multiple refactorings;
+- require design patterns;
+- require new interfaces, additional inheritance, or new abstractions;
+- require new functional requirements;
+- search for additional design problems;
+- review previous Workshops;
+- modify Java;
+- modify requirements;
+- modify documentation;
+- modify CRC;
+- modify PlantUML;
+- modify tests;
+- implement corrections;
+- provide replacement production code;
+- commit;
+- push;
+- create tags; or
+- perform final verification.
+
+RESULT
+
+If a required condition clearly fails, report:
+
+WORKSHOP-10-V1: BLOCKED
+
+Reason:
+<one concise explanation of the first unsatisfied requirement>
+
+Report only the first clear blocker.
+
+Do not provide replacement production code or implement the student's solution.
+
+The student must correct the issue independently and run Prompt 02 again.
+
+If all minimum requirements are satisfied, report exactly:
+
+WORKSHOP-10-V1: READY FOR INSTRUCTOR REVIEW
+
+Then stop.
+```
+
+---
+
+## Workshop 10 Prompt 03 — Refactoring Collaboration
+
+```text
+Perform the Workshop 10 Refactoring Collaboration.
+
+This workflow begins after the student has independently performed one focused refactoring and completed the Workshop 10 V1 checkpoint.
+
+Perform the runtime governance checks required by AGENTS.md.
+
+Before beginning, verify:
+
+1. `workshop-10-v1-completed` exists remotely.
+2. The current branch is `workshop-10`.
+
+If either condition fails, report:
+
+WORKSHOP-10 REFACTORING: BLOCKED
+
+Reason:
+<one concise explanation>
+
+Then stop.
+
+COLLABORATIVE ENGINEERING
+
+After V1, Codex acts as a senior software engineer mentoring a junior engineer.
+
+The student is the junior engineer and retains final authority over the engineering decisions for their application.
+
+Codex may:
+
+- inspect the existing application;
+- identify meaningful code smells and design problems;
+- evaluate cohesion, coupling, and responsibility assignment;
+- recommend refactorings and explain their consequences;
+- challenge engineering decisions constructively;
+- ask focused engineering questions;
+- implement decisions established by the student;
+- modify affected existing classes;
+- synchronize requirements and design artifacts;
+- maintain cumulative tests; and
+- diagnose implementation and build problems.
+
+Codex must not independently establish unresolved engineering decisions.
+
+The student must provide a meaningful rationale for decisions requiring engineering judgment.
+
+Codex must respect reasonable, justified student decisions even when another implementation might be preferable.
+
+Do not block a student merely because they decline a recommendation or select a different reasonable design.
+
+Codex may block when:
+
+1. A proposed action violates Workshop instructions, established governance, or applicable security restrictions.
+
+2. The student has not provided a meaningful rationale for a required engineering decision.
+
+3. A mandatory Workshop objective remains unsatisfied or a technical prerequisite prevents safe continuation.
+
+Distinguish disagreement over design preferences from failure to satisfy an actual Workshop requirement.
+
+Do not require formal ACCEPT/MODIFY/REJECT responses.
+
+The discussion should resemble a professional engineering collaboration.
+
+REFACTORING REVIEW
+
+Review the internal design of the entire existing semester application.
+
+Inspect:
+
+- approved requirements;
+- the current domain entities and responsibilities;
+- relationships, inheritance, interfaces, collections, and composition;
+- creation and structural design decisions from earlier Workshops;
+- the current production implementation;
+- Main.java;
+- current application behavior;
+- the cumulative behavioral test suite; and
+- the independently completed Workshop 10 V1 state.
+
+Identify meaningful code smells and design problems using the concepts introduced through Module 11.
+
+The review must cover the existing application.
+
+Do not restrict the review to the code modified during V1.
+
+Do not manufacture problems or recommend refactorings merely to increase the amount of work.
+
+Present a concise set of recommendations supported by the current application.
+
+For each recommendation, identify:
+
+- the code smell or design problem that exists;
+- the classes and methods involved;
+- why the current structure is problematic;
+- the proposed refactoring; and
+- the consequences or tradeoffs of the alternative.
+
+ENGINEERING DISCUSSION
+
+Discuss the recommendations with the student.
+
+The student establishes decisions concerning:
+
+- which design problems justify refactoring;
+- which recommendations should be accepted, modified, or rejected;
+- which responsibilities should move and where they belong;
+- whether duplicated logic should be consolidated;
+- whether a class or method should be decomposed;
+- whether behavior belongs closer to the data it uses;
+- whether an abstraction is unnecessary or missing;
+- which SOLID reasoning applies to the selected problem; and
+- how existing application behavior will be preserved.
+
+Codex may recommend alternatives and explain their consequences.
+
+The student makes the final engineering decisions.
+
+Once decisions are established, Codex may implement them.
+
+CODE SMELLS
+
+Review the application for meaningful occurrences of the code smells introduced in Module 11, including:
+
+- large classes with unrelated responsibilities;
+- long methods that are difficult to understand;
+- duplicated code;
+- feature envy;
+- long parameter lists;
+- repeated type decisions;
+- unnecessary abstractions; and
+- other signs that a part of the design deserves closer investigation.
+
+Treat each code smell as a signal for investigation rather than proof of a bad design.
+
+Discuss which occurrences represent genuine design problems worth correcting.
+
+Implement approved refactorings that address them.
+
+Do not mechanically refactor every occurrence.
+
+Do not require a fixed number of refactorings or a particular technique.
+
+SOLID REASONING
+
+Use the SOLID principles where they help explain and justify a refactoring:
+
+- Single Responsibility Principle;
+- Open/Closed Principle;
+- Liskov Substitution Principle;
+- Interface Segregation Principle;
+- Dependency Inversion Principle.
+
+Identify responsibility, inheritance, interface, and dependency problems that the principles help clarify.
+
+Discuss whether the proposed change actually improves the design.
+
+Implement approved improvements supported by the current requirements.
+
+SOLID is not a checklist.
+
+Do not require every class to satisfy each principle superficially.
+
+Do not introduce interfaces, abstractions, or indirection merely to satisfy a principle.
+
+Do not split cohesive classes or replace reasonable inheritance mechanically.
+
+COHESION AND COUPLING
+
+Review whether responsibilities within selected classes belong together and whether classes know more about each other than necessary.
+
+Identify classes containing unrelated responsibilities and dependencies that carry unnecessary knowledge.
+
+Discuss which responsibilities should remain together and which should be reassigned.
+
+Implement approved improvements that give affected classes clearer purposes and reduce unnecessary knowledge between classes.
+
+Preserve necessary dependencies.
+
+Do not split classes merely because they contain several methods, and do not attempt to eliminate coupling mechanically.
+
+DUPLICATION AND COMPLEXITY
+
+Review duplicated logic, repeated conditional decisions, and repeated type checks or conversions.
+
+Identify duplication that represents a shared responsibility rather than coincidental similarity.
+
+Discuss appropriate consolidation.
+
+Implement approved improvements where consolidation clarifies the design.
+
+Do not create abstractions for code that is only superficially similar.
+
+Do not require every repeated line to be consolidated.
+
+PRESERVE APPLICATION BEHAVIOR
+
+Workshop 10 is a behavior-preserving refactoring workshop.
+
+Do not add, remove, or change application functionality.
+
+The intended behavior of the application must remain consistent with the approved requirements.
+
+Preserve:
+
+- valid functional requirements;
+- domain entities and responsibilities that remain appropriate;
+- object relationships and multiplicities;
+- inheritance;
+- interfaces;
+- polymorphism;
+- collections and generics;
+- composition;
+- exception behavior;
+- creation and structural design decisions from earlier Workshops;
+- prior workshop design decisions; and
+- cumulative behavioral tests.
+
+A refactoring may change the internal organization of classes, methods, and collaborations.
+
+It must not silently remove or change established application behavior.
+
+PROJECT SYNCHRONIZATION
+
+After implementing the established engineering decisions, synchronize the affected:
+
+- docs/design/requirements.md;
+- CRC analysis;
+- UML artifacts;
+- docs/evolution/workshop-10.md; and
+- cumulative Workshop tests.
+
+Requirements must continue to describe the application's approved functionality.
+
+Update documented responsibilities and relationships when the refactoring changes them.
+
+CRC must represent current responsibilities and genuine collaborators.
+
+UML must represent the implemented object relationships and responsibilities.
+
+Do not introduce new functional requirements or use cases merely because an internal responsibility moved.
+
+Update use cases only when an actual actor goal changes.
+
+The evolution document must describe the actual Workshop 10 refactorings, their motivation, and their effects on the design.
+
+Do not invent project history or engineering decisions.
+
+PLANTUML OWNERSHIP
+
+PlantUML synchronization is Codex-owned work.
+
+Never instruct the student to manually edit a .puml file.
+
+The student owns the engineering decisions represented in the diagrams.
+
+Codex performs the mechanical synchronization of those decisions.
+
+If synchronization requires a missing or ambiguous engineering decision, ask the student for that decision.
+
+After the student establishes the decision, Codex performs the necessary modification.
+
+Preserve valid existing design information.
+
+TESTING
+
+Maintain the cumulative Workshop behavioral test suite.
+
+Preserve existing tests whose requirements remain valid.
+
+The cumulative tests are the primary evidence that the approved refactorings preserve behavior.
+
+Add or update tests only when necessary to verify that a refactoring preserves established behavior or when a test depended on internal structure that legitimately changed.
+
+Do not introduce tests that depend on arbitrary internal class organization.
+
+Do not require tests to assert superficial design structure such as the number of methods or classes.
+
+Follow the testing governance in AGENTS.md.
+
+Do not introduce JUnit, mocks, stubs, or other testing frameworks not yet authorized by the course.
+
+Do not weaken, rewrite, or remove existing tests merely because the refactored implementation fails them.
+
+If a test fails after a refactoring, treat it as evidence about behavior: determine whether the refactoring accidentally changed behavior or whether the test depended on an implementation detail that the student had a justified reason to change.
+
+If the correct interpretation is ambiguous, report the conflict instead of silently changing the test.
+
+Run the complete cumulative test suite before and after the refactorings using the project's committed Maven Wrapper.
+
+If a correction requires a new engineering decision, discuss it with the student before implementing the change.
+
+WORKSHOP SCOPE
+
+Use only concepts introduced through Module 11.
+
+Do not introduce:
+
+- new design patterns beyond those already established in earlier Workshops;
+- databases or persistence;
+- repositories;
+- dependency injection;
+- MVC;
+- architectural layers;
+- broad package restructuring; or
+- other later-course concepts.
+
+Do not redesign unrelated parts of the application.
+
+Do not introduce new features merely to create refactoring opportunities.
+
+COMPLETION
+
+The Refactoring Collaboration is complete when:
+
+1. The existing application has been reviewed for meaningful code smells and design problems, including cohesion, coupling, responsibility assignment, duplication, large classes, long methods, feature envy, repeated type decisions, and unnecessary abstractions.
+
+2. The student has discussed the recommendations and established the engineering decisions with meaningful rationales.
+
+3. The post-V1 review findings and the student's decisions are reflected in the implementation: additional justified behavior-preserving refactorings were implemented where the review and the student's decisions justified them. If the review found no additional justified refactoring, retaining the existing design with a rationale is an acceptable outcome.
+
+4. Affected classes and methods have clearer, more appropriate internal structure where justified changes were implemented.
+
+5. Duplicated responsibilities have been consolidated where justified.
+
+6. Relevant SOLID reasoning has been applied where it explains a real design problem.
+
+7. Unnecessary abstractions have been removed or avoided where the review established they were not justified.
+
+8. Existing intended application behavior remains preserved, with the cumulative tests as evidence.
+
+9. Valid requirements, relationships, inheritance, interfaces, polymorphism, collections, composition, creation responsibilities, structural boundaries, and exception behavior remain intact.
+
+10. Affected requirements, CRC, UML, evolution documentation, and cumulative tests are synchronized.
+
+11. The production application builds successfully.
+
+12. The complete cumulative test suite passes.
+
+Do not require a fixed number of refactorings.
+
+Do not require every code smell to be corrected.
+
+Do not require every class to satisfy a SOLID checklist.
+
+Do not require new interfaces, abstractions, or classes.
+
+Do not require every identified concern to result in a code change.
+
+Do not introduce later-course architecture.
+
+When all required conditions are satisfied, report exactly:
+
+WORKSHOP-10 REFACTORING: COMPLETE
+
+Then report concisely:
+
+Design review: COMPLETE
+Code smells: REVIEWED
+SOLID reasoning: APPLIED WHERE JUSTIFIED
+Behavior preservation: VERIFIED
+Requirements: SYNCHRONIZED
+CRC/UML: SYNCHRONIZED
+Evolution: UPDATED
+Tests: PASS
+Build: PASS
+
+Then stop.
+
+Do not perform the Final Engineering Review and Verification.
+Do not perform final submission.
+```
+
+---
+
+## Workshop 10 Prompt 04 — Final Engineering Review and Verification
+
+```text
+Perform the Workshop 10 Final Engineering Review and Verification.
+
+This is one light final engineering review and technical verification of the completed Workshop 10 work.
+
+Perform the runtime governance checks required by AGENTS.md.
+
+Do not perform another Refactoring Collaboration.
+
+Do not reopen established engineering decisions merely because another reasonable design exists.
+
+REQUIRED WORKSHOP CONDITIONS
+
+Verify:
+
+1. `workshop-10-v1-completed` exists remotely.
+
+2. The current branch is `workshop-10`.
+
+3. The required independent V1 refactoring remains present and functional.
+
+4. The V1 design problem was meaningful and supported by the actual implementation.
+
+5. The V1 refactoring improved the internal structure while preserving intended behavior.
+
+6. The post-V1 collaboration reviewed the existing application for meaningful code smells and design problems, including cohesion, coupling, responsibility assignment, duplication, large classes, long methods, feature envy, repeated type decisions, and unnecessary abstractions.
+
+7. The student established the engineering decisions for the approved refactorings.
+
+8. The student's post-V1 decisions are reflected in the implementation: additional behavior-preserving refactorings were implemented only where justified. If no further refactoring was justified, the existing design was retained with a rationale; this is an acceptable Workshop outcome.
+
+9. SOLID reasoning was applied where it explained a real design problem rather than as a mechanical checklist.
+
+10. The application's intended behavior remains preserved.
+
+11. No functionality was added, removed, or changed as part of the refactoring.
+
+12. Valid requirements, relationships, inheritance, interfaces, polymorphism, collections, composition, creation responsibilities, structural boundaries, and exception behavior remain preserved.
+
+13. The affected requirements, CRC, UML, and evolution documentation represent the current implementation.
+
+14. The cumulative Workshop tests represent the approved current behavior and continue to protect it.
+
+15. The production application builds successfully using the project's committed Maven Wrapper.
+
+16. The complete cumulative Workshop test suite passes.
+
+17. The Workshop 10 implementation remains within concepts authorized through Module 11.
+
+Do not require:
+
+- a fixed number of refactorings;
+- every code smell to be corrected;
+- every class to satisfy a SOLID checklist;
+- a particular refactoring technique or code-smell name;
+- new interfaces, abstractions, or classes;
+- design patterns beyond those already established;
+- new functional requirements;
+- additional domain entities;
+- later-course architecture; or
+- speculative design improvements.
+
+Do not convert an optional design improvement into a required Workshop condition.
+
+FINAL ENGINEERING RECOMMENDATIONS
+
+Perform one light review for important remaining engineering concerns.
+
+Report no more than four recommendations.
+
+Report fewer when fewer important concerns exist.
+
+Do not invent recommendations.
+
+Do not report:
+
+- cosmetic issues;
+- naming preferences;
+- stylistic preferences;
+- speculative improvements;
+- later-course concepts;
+- reasonable alternative designs;
+- limitations intentionally deferred to later Workshops; or
+- issues already discussed and intentionally resolved during the Refactoring Collaboration.
+
+For each recommendation use:
+
+Recommendation NN — <short title>
+
+<concise concern>
+
+Recommendations are advisory.
+
+Do not require ACCEPT/MODIFY/REJECT responses.
+
+The student decides whether a recommendation should change the application.
+
+Codex may implement a recommendation only after the student establishes that engineering decision.
+
+Advisory recommendations do not block Workshop completion.
+
+If the student chooses to implement a recommendation, synchronize affected project artifacts and tests and rerun the build and cumulative tests as necessary.
+
+Do not perform another open-ended Engineering Review afterward.
+
+WORKSHOP VERIFICATION
+
+Complete the required Workshop Verification using the authoritative Workshop 10 instructions and the existing AGENTS.md governance.
+
+Use the required governance verification procedure and evidence handling.
+
+This is part of the same student-facing Prompt 04 workflow, not an additional Workshop section.
+
+Do not modify student project content during the verification stage.
+
+Do not perform another qualitative engineering review.
+
+Do not reopen:
+
+- established student engineering decisions;
+- advisory recommendations;
+- recommendations the student chose not to implement; or
+- reasonable design alternatives.
+
+Evaluate required Workshop objectives against repository evidence.
+
+Preserve all existing governance evidence and prior verification attempts.
+
+Append and persist the required verification evidence according to AGENTS.md.
+
+Do not invent alternative governance evidence, bypass required persistence, or rewrite existing verification history.
+
+If governance evidence cannot be persisted successfully, preserve the local evidence and report the technical failure according to AGENTS.md.
+
+Do not report Workshop 10 as fully passed when required governance verification or evidence persistence remains incomplete.
+
+RESULT
+
+If a required Workshop condition fails, report:
+
+WORKSHOP-10: BLOCKED
+
+Reason:
+<one concise explanation of the unsatisfied Workshop requirement>
+
+Then stop.
+
+If every required Workshop condition passes and the required Workshop Verification completes successfully, report exactly:
+
+WORKSHOP-10: PASSED
+
+Then report concisely:
+
+Recommendations: <number>
+Build: PASS
+Tests: PASS
+Workshop verification: PASS
+Governance evidence: PRESERVED
+
+Then stop.
+
+Do not perform final submission.
+```
+
+---
+
+## Workshop 10 Prompt 05 — Final Submission
+
+```text
+Perform the Workshop 10 final submission workflow.
+
+This is the final submission workflow only.
+
+Follow the established final Workshop submission procedure in AGENTS.md.
+
+Do not perform another:
+
+- Refactoring Collaboration;
+- Final Engineering Review and Verification; or
+- engineering review of the completed project.
+
+Do not reconsider established Workshop 10 engineering decisions or advisory recommendations.
+
+SUBMISSION PREREQUISITES
+
+Before submission, verify:
+
+1. The current branch is `workshop-10`.
+
+2. The latest Workshop 10 Final Engineering Review and Verification reached:
+
+WORKSHOP-10: PASSED
+
+3. The required Workshop Verification evidence was successfully preserved.
+
+4. The complete Maven test suite passes using the project's committed Maven Wrapper.
+
+If a prerequisite fails, report:
+
+WORKSHOP-10 SUBMISSION: BLOCKED
+
+Reason:
+<one concise explanation of the failed prerequisite>
+
+Then stop.
+
+Do not perform engineering repairs during final submission.
+
+COURSE MATERIALS
+
+`AGENTS.md` is governance-controlled and must not be modified.
+
+`agents/PROMPTS.md` is intentionally cumulative.
+
+The Workshop 10 prompts are expected additions to that file.
+
+The Workshop 10 instruction file copied into the student's repository is also an expected Workshop artifact.
+
+Do not classify these expected additions as unauthorized course-material modifications.
+
+Do not require the cumulative `agents/PROMPTS.md` to match its pre-Workshop-10 state.
+
+Preserve previously established prompt material.
+
+Do not modify the copied Workshop instructions during submission.
+
+SUBMISSION FILES
+
+The submission is the completed Workshop 10 project state.
+
+Additional files are permitted when they contain legitimate work related to Workshop 10 or the student's semester project evolution.
+
+Do not exclude or block a file merely because its exact filename was not anticipated by the Workshop instructions.
+
+Do not classify legitimate Workshop-related files as unrelated merely because they were already staged.
+
+Exclude files that are clearly unrelated, accidental, generated and unsuitable for version control, unsafe, sensitive, or prohibited by applicable governance.
+
+Do not modify production code, requirements, tests, CRC, UML, evolution documentation, or other legitimate project content merely to complete submission.
+
+FINAL SUBMISSION
+
+After the student has explicitly authorized final submission:
+
+1. Inspect the current Git state and intended Workshop 10 changes.
+
+2. Verify the authorized student repository and current `workshop-10` branch.
+
+3. Stage only the exact intended Workshop 10 files, including legitimate Workshop-related additions.
+
+4. Inspect the staged content.
+
+5. Commit the completed Workshop 10 state if uncommitted changes exist.
+
+6. Push only `workshop-10` to the verified authorized remote.
+
+7. Create or use the pull request from `workshop-10` into protected `main`.
+
+8. Enable auto-merge when available and permitted.
+
+9. Wait for required GitHub checks and merge conditions.
+
+10. Verify that the Workshop 10 pull request has actually merged into protected remote `main`.
+
+11. Only after repository acceptance is MERGED, switch to local `main`.
+
+12. Safely synchronize local `main` from the verified remote.
+
+13. Verify that local `main` contains the accepted Workshop 10 state.
+
+14. Create the annotated tag:
+
+workshop-10-completed
+
+15. Push only `workshop-10-completed`.
+
+16. Verify that the remote tag identifies the accepted Workshop 10 commit on protected `main`.
+
+17. Verify that local `main` is clean.
+
+Do not:
+
+- use prohibited broad staging commands;
+- force-push;
+- bypass protected-main rules;
+- push directly to protected `main`;
+- bypass required GitHub checks;
+- approve or force-merge the pull request;
+- rewrite Git history;
+- move, delete, recreate, or overwrite an existing Workshop tag;
+- modify `workshop-10-v1-completed`;
+- create `workshop-10-completed` before repository acceptance is MERGED;
+- modify project content merely to make submission succeed;
+- modify PlantUML during submission;
+- instruct the student to modify PlantUML during submission; or
+- perform unrelated repository changes.
+
+If repository acceptance is BLOCKED, PENDING, or NOT VERIFIED, report the state and stop before creating the final completion tag.
+
+If a GitHub action requires a manual student action, pause and state only the required action.
+
+After the student completes the action, continue from the paused submission stage.
+
+Do not restart completed stages or repeat Engineering Review and Verification.
+
+SUBMISSION COMPLETION
+
+Workshop 10 is complete only after:
+
+- the accepted Workshop 10 state is on protected remote `main`;
+- local `main` is synchronized with the accepted remote state;
+- local `main` is clean;
+- `workshop-10-completed` exists remotely; and
+- the tag identifies the accepted Workshop 10 commit on protected `main`.
+
+Then report exactly:
+
+WORKSHOP-10 SUBMISSION: COMPLETE
+
+Then report concisely:
+
+Branch: workshop-10
+Repository acceptance: MERGED
+Local main: SYNCHRONIZED
+Completion tag: workshop-10-completed
+Final status: CLEAN
+
+Workshop 11 requires the accepted Workshop 10 state and remote `workshop-10-completed` tag.
+
+Then stop.
+```
